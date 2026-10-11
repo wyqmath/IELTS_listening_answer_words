@@ -13,7 +13,7 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_ROOT = {
-    '.gitignore', '.gitattributes', 'README.md', 'README.zh-CN.md', 'index.html',
+    'README.md', 'README.zh-CN.md', 'index.html',
 }
 PUBLIC_ASSETS = {
     'app/app.js', 'app/styles.css', 'app/assets/icon.svg',
@@ -24,12 +24,14 @@ PUBLIC_ASSETS = {
 }
 # Former public locations remain subject to every content/secret check.
 HISTORICAL_PUBLIC_PATHS = {
+    '.gitignore', '.gitattributes',
     'LICENSE', 'README.en.md', '使用说明.md', 'tools/README.en.md',
     'package.json', 'package-lock.json', 'app/index.html', 'app.js', 'styles.css',
     '打开网页.cmd', '启动本地预览.cmd', 'assets/icon.svg',
     'data/vocab.json', 'data/vocab.js', 'examples/source.json', 'examples/vocab.json',
 }
 PRIVATE_EXAMPLES = [
+    '.gitignore', '.gitattributes',
     '.env', '.env.local', 'private/source.md', '1.md', 'source.md',
     'data/source_rows.json', 'data/full_annotation_state.json',
     'data/quality_review.json', 'data/full_pipeline.log', 'data/vocab.before_review.json',
