@@ -4,10 +4,10 @@
 !/.gitattributes
 !/README.md
 !/README.zh-CN.md
+!/index.html
 
 !/app/
 /app/*
-!/app/index.html
 !/app/app.js
 !/app/styles.css
 !/app/assets/

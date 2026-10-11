@@ -14,16 +14,18 @@ const assert = require('node:assert/strict');
 const { pathToFileURL } = require('node:url');
 const { chromium, auditLaunch, auditOutput } = require('./playwright_runtime.cjs');
 
-const root = path.resolve(__dirname, '..', 'app');
+const root = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
 if (args.includes('--headed')) throw new Error('Visible browser testing is disabled. Run this audit headlessly, in its isolated browser context.');
 const headed = false;
 const controlledSpeechCases = new Set(['keyboard-controls', 'space-play-focus', 'enter-context', 'flashcard-enter',
-  'repeat-playback', 'repeat-pause', 'repeat-cancellation', 'repeat-error', 'auto-all-modes', 'fullscreen-combined-hints']);
+  'repeat-playback', 'repeat-pause', 'repeat-cancellation', 'repeat-error', 'auto-all-modes', 'fullscreen-combined-hints',
+  'default-autoplay', 'autoplay-upgrade', 'foldable-controls', 'category-all-modes']);
 const explicitUrl = args.find(x => x.startsWith('--url='))?.slice(6);
 const only = args.find(x => x.startsWith('--only='))?.slice(7)?.split(',');
 const transportOption = args.find(x => x.startsWith('--transport='))?.slice(12);
-const key = 'tingjian.full.v2';
+const key = 'tingjian.full';
+const legacyKey = 'tingjian.full.v2';
 const label = args.find(x => x.startsWith('--label='))?.slice(8)?.replace(/[^a-z0-9-]/g, '');
 const suffix = label ? '-' + label : '';
 const reportDir = auditOutput();
@@ -31,15 +33,15 @@ const screenshotDir = path.join(reportDir, 'screenshots');
 fs.mkdirSync(screenshotDir, { recursive: true });
 
 function readJson(file) { return JSON.parse(fs.readFileSync(path.join(root, file), 'utf8').replace(/^\uFEFF/, '')); }
-if (!fs.existsSync(path.join(root, 'data/vocab.json')) || !fs.existsSync(path.join(root, 'data/vocab.js')))
+if (!fs.existsSync(path.join(root, 'app/data/vocab.json')) || !fs.existsSync(path.join(root, 'app/data/vocab.js')))
   throw new Error('The bundled data/vocab.json and data/vocab.js are required.');
-const data = readJson('data/vocab.json');
+const data = readJson('app/data/vocab.json');
 const entries = Array.isArray(data) ? data : data.items;
 assert.equal(entries.length, 1533, 'The audit must exercise all 1533 real entries.');
 assert.equal(new Set(entries.map(x => x.id)).size, 1533, 'Entry IDs must be unique.');
 const byId = new Map(entries.map(x => [x.id, x]));
 function evidenceHashes() {
-  return Object.fromEntries(['app.js', 'index.html', 'styles.css', 'data/vocab.json', 'data/vocab.js'].filter(file =>
+  return Object.fromEntries(['app/app.js', 'index.html', 'app/styles.css', 'app/data/vocab.json', 'app/data/vocab.js'].filter(file =>
     fs.existsSync(path.join(root, file))).map(file => [file, crypto.createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest('hex')]));
 }
 const report = { audit: 'independent-function-flows', generatedAt: new Date().toISOString(),
@@ -53,6 +55,23 @@ let browser, server;
 
 function invariant(actual, expected, label) { assert.deepEqual(actual, expected, label); }
 async function state(page) { return page.evaluate(k => JSON.parse(localStorage.getItem(k)), key); }
+async function seedStorage(page, values, removeKeys = [], failWrites = false) {
+  await page.context().addInitScript(({ values, removeKeys, failWrites, key }) => {
+    if (!sessionStorage.getItem('audit-storage-seeded')) {
+      for (const name of removeKeys) localStorage.removeItem(name);
+      for (const [name, value] of values) localStorage.setItem(name, JSON.stringify(value));
+      sessionStorage.setItem('audit-storage-seeded', 'true');
+    }
+    if (failWrites) {
+      const setItem = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (name, value) {
+        if (name === key) throw new DOMException('Storage quota reached', 'QuotaExceededError');
+        return setItem.call(this, name, value);
+      };
+    }
+  }, { values, removeKeys, failWrites, key });
+  await page.reload();
+}
 async function currentId(page) { const s = await state(page); return s.session.ids[s.session.cursor]; }
 async function currentEntry(page) { return byId.get(await currentId(page)); }
 async function submit(page, value) {
@@ -70,6 +89,7 @@ async function exerciseAction(page, id) {
   await page.locator('#' + id).click();
 }
 async function selectRange(page, id, value) {
+  if (id === 'category-select') { await page.locator('#' + id).selectOption(value); return; }
   await openOptions(page, 'practice-options');
   await page.locator('#' + id).selectOption(value);
   await page.locator('#practice-options > summary').click();
@@ -178,6 +198,116 @@ test('full-load', '完整词库加载、首页隐藏总数与全新学习状态'
   invariant(s.history, [], 'Source historical answers are ignored.');
   invariant(Object.values(s.records).some(r => r.attempts || r.inMistakes || r.marked || r.seen), false, 'No old status is imported.');
   invariant(s.settings.target, 3, 'Default removal threshold is three independent answers.');
+  invariant(s.settings.autoSpeak, true, 'Advancing automatically reads the next item by default.');
+});
+
+test('default-autoplay', '默认下一条朗读、纠错后朗读及手动关闭', 'P1', ['答对后回车切题', '答错并纠错后点击切题', '关闭自动朗读并刷新'], async page => {
+  invariant(await page.evaluate(() => window.__auditSpeech.speak.length), 0, 'Initial load does not play without interaction.');
+  await submit(page, (await currentEntry(page)).original);
+  await page.keyboard.press('Enter');
+  invariant(await page.evaluate(() => window.__auditSpeech.speak.map(x => x.text)), [entries[1].speakText], 'Enter advances and reads the new answer once.');
+  await submit(page, 'wrong-default-autoplay');
+  await submit(page, (await currentEntry(page)).original);
+  await next(page);
+  invariant(await page.evaluate(() => window.__auditSpeech.speak.at(-1).text), entries[2].speakText, 'Advancing after correction reads the new entry.');
+  await page.locator('#sound-shortcut').click(); await page.locator('#auto-speak').uncheck();
+  await page.locator('#sound-dialog .close-button').click(); await page.reload();
+  invariant((await state(page)).settings.autoSpeak, false, 'A manual opt-out survives reload.');
+  await next(page);
+  invariant(await page.evaluate(() => window.__auditSpeech.speak.length), 0, 'Disabled automatic reading stays silent after navigation.');
+});
+
+test('autoplay-upgrade', '旧记录启用新默认并保留学习记录', 'P1', ['写入旧设置与标记', '刷新', '检查自动朗读及学习记录'], async page => {
+  const saved = await state(page);
+  saved.settings.autoSpeak = false; delete saved.settings.autoSpeakConfigured;
+  saved.records[saved.session.ids[0]].marked = true;
+  await seedStorage(page, [[key, saved]]);
+  invariant((await state(page)).settings.autoSpeak, true, 'The previous false default migrates to automatic reading.');
+  invariant((await state(page)).records[entries[0].id].marked, true, 'Migration preserves bookmarks.');
+  await next(page);
+  invariant(await page.evaluate(() => window.__auditSpeech.speak.at(-1).text), entries[1].speakText, 'The migrated default actually reads on navigation.');
+});
+
+test('storage-migration', '无版本号存储键迁移保留记录及纠错状态', 'P1', ['标记并答错', '以旧键保存', '重新加载后纠错并刷新'], async page => {
+  await page.locator('#bookmark').click(); await page.locator('#default-chinese').check();
+  await submit(page, 'wrong-before-migration');
+  const saved = await state(page);
+  saved.settings.autoSpeak = false; saved.settings.autoSpeakConfigured = true;
+  await seedStorage(page, [[legacyKey, saved]], [key]);
+  const migrated = await state(page);
+  invariant(migrated.records, saved.records, 'Bookmarks, mistakes and counters survive the key change.');
+  invariant(migrated.history, saved.history, 'Answer history survives the key change.');
+  invariant(migrated.session, saved.session, 'Current question, hints and correction state survive the key change.');
+  invariant(migrated.settings, saved.settings, 'Explicit playback and other settings survive migration.');
+  invariant(await page.evaluate(k => localStorage.getItem(k), legacyKey), null, 'The old key is removed after the new save succeeds.');
+  invariant(await page.locator('#next').isDisabled(), true, 'Migration keeps unfinished correction locked.');
+  await submit(page, (await currentEntry(page)).original); await page.reload();
+  invariant((await state(page)).records[entries[0].id].corrections, 1, 'Later answers keep using the new key after reload.');
+  invariant(await page.locator('#next').isDisabled(), false, 'Completed correction remains completed.');
+});
+
+test('storage-current-priority', '新旧存储同时存在时保留当前记录', 'P1', ['保存当前练习记录', '同时放入旧键', '重新加载'], async page => {
+  await page.locator('#bookmark').click(); await submit(page, 'wrong-current-save');
+  const saved = await state(page), stale = { ...saved, records: {}, history: [], session: null };
+  await seedStorage(page, [[key, saved], [legacyKey, stale]]);
+  const currentSave = await state(page);
+  invariant(currentSave.records, saved.records, 'A stale old key cannot overwrite current records.');
+  invariant(currentSave.history, saved.history, 'Current answer history wins.');
+  invariant(await page.locator('#next').isDisabled(), true, 'Current correction state wins.');
+});
+
+test('storage-migration-failure', '迁移写入失败时保留旧记录并提示', 'P1', ['以旧键保存标记', '模拟存储写入失败', '检查记录仍然保留'], async page => {
+  await page.locator('#bookmark').click(); const saved = await state(page);
+  await seedStorage(page, [[legacyKey, saved]], [key], true);
+  invariant(await page.evaluate(k => JSON.parse(localStorage.getItem(k)), legacyKey), saved, 'Failed migration never deletes the original records.');
+  invariant(await page.evaluate(k => localStorage.getItem(k), key), null, 'A failed write does not pretend migration succeeded.');
+  invariant(await page.locator('#bookmark').getAttribute('aria-pressed'), 'true', 'Old records remain usable in memory.');
+  invariant(await page.locator('#save-status').isVisible(), true, 'The user sees the backup reminder when storage fails.');
+});
+
+test('foldable-controls', '普通与全屏折叠独立保存，提示和纠错不丢失', 'P1', ['折叠普通操作', '快捷键重听', '进入全屏默认收起', '展开后切换并刷新'], async page => {
+  invariant(await page.locator('#practice-controls').isVisible(), true, 'Normal controls start expanded.');
+  await page.locator('#default-chinese').check(); await page.locator('#default-phonetic').check();
+  await page.locator('#answer-input').fill('partial');
+  await page.locator('#toggle-controls').click();
+  invariant(await page.locator('#practice-controls').isVisible(), false, 'Normal controls can fold.');
+  invariant(await page.locator('#question-hints .question-hint').count(), 2, 'Folding preserves selected hints.');
+  await page.locator('#answer-input').press('Alt+r');
+  invariant(await page.evaluate(() => window.__auditSpeech.speak.at(-1).text), entries[0].speakText, 'Replay works while controls are folded.');
+  await page.locator('#open-fullscreen').click();
+  invariant(await page.locator('#practice-controls').isVisible(), false, 'Fullscreen controls start folded.');
+  invariant(await page.locator('#answer-input').inputValue(), 'partial', 'Fullscreen folding preserves typed text.');
+  await page.locator('#toggle-controls').click();
+  await page.locator('#bookmark').click();
+  await page.locator('#open-fullscreen').click();
+  await page.waitForFunction(() => !document.body.classList.contains('immersive'));
+  invariant(await page.locator('#practice-controls').isVisible(), false, 'Normal folded preference is independent of fullscreen.');
+  await page.locator('#open-fullscreen').click();
+  invariant(await page.locator('#practice-controls').isVisible(), true, 'Fullscreen remembers its expanded preference.');
+  await submit(page, 'wrong-folding');
+  await page.locator('#toggle-controls').click();
+  invariant(await page.locator('#next').isDisabled(), true, 'Correction stays locked with controls hidden.');
+  await page.locator('#open-fullscreen').click();
+  await page.waitForFunction(() => !document.body.classList.contains('immersive'));
+  await page.reload();
+  invariant(await page.locator('#practice-controls').isVisible(), false, 'Normal folded preference survives reload.');
+  invariant(await page.locator('#next').isDisabled(), true, 'The correction lock survives reload too.');
+});
+
+test('category-all-modes', '五个分类均可用四种方式练习', 'P1', ['逐个选择分类', '切换四模式', '检查练习池保持分类'], async page => {
+  invariant(await page.locator('#category-select').isVisible(), true, 'Category is directly available without opening the range menu.');
+  for (const category of ['常规', '字符串', '数值', '时间', '拼写']) {
+    await page.locator('#category-select').selectOption(category);
+    const expected = entries.filter(x => x.category === category).map(x => x.id);
+    for (const name of ['listen', 'chinese', 'phonetic', 'flashcard']) {
+      await mode(page, name); await next(page);
+      const saved = await state(page);
+      invariant(saved.session.ids, expected, category + ' keeps the full matching practice pool in ' + name);
+      invariant((await currentEntry(page)).category, category, 'Navigation stays in the chosen category.');
+    }
+  }
+  await page.reload();
+  invariant(await page.locator('#category-select').inputValue(), '拼写', 'The chosen category survives reload.');
 });
 
 test('empty-no-score', '空答案不计分、不锁题', 'P2', ['不填写答案', '按 Enter', '检查学习记录'], async page => {
@@ -616,6 +746,8 @@ test('extended-settings-backup', '宽语速、播放次数与默认提示备份�
 
 test('fullscreen-combined-hints', '全屏直接切模式和组合提示、键盘朗读与标记', 'P1', ['进入全屏', '依次切换四种模式', '加单次和默认提示', '朗读、标记和错题操作'], async page => {
   await page.locator('#open-fullscreen').click();
+  invariant(await page.locator('#practice-controls').isVisible(), false, 'Fullscreen starts with folded controls.');
+  await page.locator('#toggle-controls').click();
   for (const id of ['bookmark', 'toggle-mistake', 'previous', 'sound-shortcut', 'open-help'])
     invariant(await page.locator('#' + id).isVisible(), true, 'Fullscreen action is visible: ' + id);
   const item = await currentEntry(page);

@@ -10,7 +10,8 @@ The same practice system works with your own CET-4, CET-6 or other English vocab
 
 ```text
 README.md / README.zh-CN.md
-app/       Web page, styles, scripts, icon and vocabulary
+index.html Web entry
+app/       Styles, scripts, icon and vocabulary
 tools/     Windows launchers, annotation tools, audits and examples
 ```
 
@@ -18,7 +19,7 @@ The original study notes are not included. The structured vocabulary is in `app/
 
 ## Open the page
 
-Keep the downloaded folder together and open [`app/index.html`](app/index.html) or double click `tools/打开网页.cmd`. Chrome or Edge is recommended. Daily practice needs no installation, account or API configuration.
+Keep the downloaded folder together and open [`index.html`](index.html) or double click `tools/打开网页.cmd`. Chrome or Edge is recommended. Daily practice needs no installation, account or API configuration.
 
 | Launcher | Purpose | Requirements |
 | --- | --- | --- |
@@ -64,13 +65,13 @@ Articles, plurals and tense must match. Case, outer/repeated spaces and hyphens 
 | `Enter` | Play a blank question; submit a filled answer; advance after success/correction; read a flashcard |
 | `Esc` | Close a menu/dialog or exit fullscreen |
 
-Bookmark, add/remove mistake, previous, speech/practice settings and keyboard/grading help remain visible in both layouts. Submit and the next button after success show `↵`; a short hint explains the current Enter action. Entering, flipping or advancing a flashcard focuses playback. Enter activates another button when deliberately focused. IME composition does not submit, and a held Enter does not repeatedly advance.
+Modes, category, range, bookmark, mistake actions, previous, hints and settings share a foldable control area. It starts expanded in normal practice and collapsed in fullscreen; each layout remembers its choice. Folding keeps hints and keyboard shortcuts active. Submit and the next button after success show `↵`; a short hint explains the current Enter action. Entering, flipping or advancing a flashcard focuses playback. Enter activates another button when deliberately focused. IME composition does not submit, and a held Enter does not repeatedly advance.
 
-Fullscreen keeps mode and hint choices with exit in the corner. Browsers without native fullscreen use an immersive layout. Long details and short screens can scroll; exiting preserves answers and correction state.
+Fullscreen shows the exercise, playback, answers and navigation, with expand and exit controls in the corners. Expand the controls to change mode, category or hints. Browsers without native fullscreen use an immersive layout. Long details and short screens can scroll; exiting preserves answers and correction state.
 
 ## Speech
 
-Speech uses browser `SpeechSynthesis`, with **no prerecorded audio**. Settings expose voice, rate, pitch, volume and automatic reading of the next entry. Prefer `en-GB` for a British voice when available.
+Speech uses browser `SpeechSynthesis`, with **no prerecorded audio**. Settings expose voice, rate, pitch and volume. Advancing to the next entry automatically reads it by default in every mode; you can turn this off. Existing saves receive this default, while later manual opt-outs are preserved. Prefer `en-GB` for a British voice when available.
 
 Rate covers **0.1–10×** using a slider or number input; actual speed depends on the voice. Playback can repeat **1–10 times**, once by default, for play, replay and automatic reading in every mode, with roughly half a second between repeats. Replay starts over. Navigation, mode/view changes, settings/help and backgrounding cancel remaining repeats; Space pauses or resumes.
 

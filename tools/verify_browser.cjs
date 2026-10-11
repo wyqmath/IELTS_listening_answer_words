@@ -5,10 +5,10 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { pathToFileURL } = require('node:url');
 const { chromium, auditLaunch, auditOutput } = require('./playwright_runtime.cjs');
-const root = path.resolve(__dirname, '..', 'app');
+const root = path.resolve(__dirname, '..');
 const reportDir = auditOutput(); fs.mkdirSync(reportDir, { recursive: true });
 const base = process.argv.find(arg => arg.startsWith('--url='))?.slice(6) || 'http://127.0.0.1:11545/';
-const data = JSON.parse(fs.readFileSync(path.join(root, 'data/vocab.json'), 'utf8'));
+const data = JSON.parse(fs.readFileSync(path.join(root, 'app/data/vocab.json'), 'utf8'));
 assert.equal(data.items.length, 1533);
 const speechMock = () => {
   const available = [
@@ -27,7 +27,7 @@ const speechMock = () => {
 };
 (async () => {
   const sourceHashes = {};
-  for (const file of ['app.js', 'index.html', 'styles.css', 'data/vocab.json', 'data/vocab.js']) {
+  for (const file of ['app/app.js', 'index.html', 'app/styles.css', 'app/data/vocab.json', 'app/data/vocab.js']) {
     const full = path.join(root, file);
     if (fs.existsSync(full)) sourceHashes[file] = crypto.createHash('sha256').update(fs.readFileSync(full)).digest('hex');
   }
@@ -81,9 +81,12 @@ const speechMock = () => {
         assert.ok(fullscreen.immersive);
         for (const selector of ['.brand', '#open-sound', '#card-category', '#card-position']) assert.equal(await page.locator(selector).isVisible(), false, 'Fullscreen should hide secondary elements: ' + selector);
         const visibleControls = await page.evaluate(() => [...document.querySelectorAll('button,input,summary,a,select')].filter(el => el.checkVisibility() && el.getBoundingClientRect().height > 0).length);
-        for (const selector of ['#bookmark', '#toggle-mistake', '#previous', '#sound-shortcut', '#open-help', '[data-mode=listen]', '[data-mode=chinese]', '[data-mode=phonetic]', '[data-mode=flashcard]', '#hint-chinese', '#hint-phonetic', '#default-chinese', '#default-phonetic']) assert.equal(await page.locator(selector).isVisible(), true, 'Fullscreen keeps requested controls visible: ' + selector);
+        for (const selector of ['#bookmark', '#toggle-mistake', '#previous', '#sound-shortcut', '#open-help', '[data-mode=listen]', '[data-mode=chinese]', '[data-mode=phonetic]', '[data-mode=flashcard]', '#hint-chinese', '#hint-phonetic', '#default-chinese', '#default-phonetic', '#category-select']) assert.equal(await page.locator(selector).isVisible(), false, 'Fullscreen folds secondary controls: ' + selector);
         assert.equal(await page.evaluate(() => document.documentElement.scrollHeight > innerHeight + 1), false, 'Short fullscreen exercises need no empty scrolling');
         fullscreen.visibleControls = visibleControls;
+        await page.locator('#toggle-controls').click();
+        assert.equal(await page.locator('#category-select').isVisible(), true);
+        assert.equal(await page.locator('#bookmark').isVisible(), true);
         await page.locator('#open-fullscreen').click();
         await page.waitForFunction(() => !document.body.classList.contains('immersive'));
         assert.equal(await page.evaluate(() => document.body.classList.contains('immersive')), false);
@@ -133,7 +136,7 @@ const speechMock = () => {
     assert.equal(await p.locator('#test-voice').isDisabled(), true); assert.match(await p.locator('#voice-note').innerText(), /浏览器语音不可用/);
     await p.locator('#sound-dialog .close-button').click(); await p.locator('#play-main').click();
     assert.match(await p.locator('#speech-status').innerText(), /浏览器不支持朗读/);
-    result.checks.push('speech unsupported gives a visible explanation', 'no prerecorded audio', 'home omits total vocabulary count', 'home removes decorative sections', 'fullscreen visible actions, modes, hints and no empty scrolling');
+    result.checks.push('speech unsupported gives a visible explanation', 'no prerecorded audio', 'home omits total vocabulary count', 'home removes decorative sections', 'fullscreen foldable actions, modes and hints without empty scrolling');
     await missing.close();
     // Check the user's reported repeated refresh in one isolated background tab.
     const idleContext = await browser.newContext(); await idleContext.addInitScript(speechMock);

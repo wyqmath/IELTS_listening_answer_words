@@ -19,9 +19,11 @@
   for (let i = 0; i < identityText.length; i++) identityHash = Math.imul(identityHash ^ identityText.charCodeAt(i), 16777619);
   const datasetId = typeof vocabulary.datasetId === 'string' && vocabulary.datasetId.trim() ? vocabulary.datasetId :
     `vocab-${(identityHash >>> 0).toString(16)}`;
-  const storageKey = datasetId === '1533' ? 'tingjian.full.v2' : `tingjian.v2.${datasetId}`;
-  const defaults = { voice: '', rate: 0.85, pitch: 1, volume: 1, target: 3, autoSpeak: false,
-    repeats: 1, hintChinese: false, hintPhonetic: false };
+  const storageKey = datasetId === '1533' ? 'tingjian.full' : `tingjian.${datasetId}`;
+  const legacyStorageKey = datasetId === '1533' ? 'tingjian.full.v2' : `tingjian.v2.${datasetId}`;
+  const defaults = { voice: '', rate: 0.85, pitch: 1, volume: 1, target: 3, autoSpeak: true,
+    autoSpeakConfigured: false, repeats: 1, hintChinese: false, hintPhonetic: false,
+    controlsCollapsed: false, immersiveControlsCollapsed: true };
   function readSettings(value, base = defaults) {
     const s = value && typeof value === 'object' ? value : {}, next = { ...base };
     if (typeof s.voice === 'string') next.voice = s.voice;
@@ -30,15 +32,24 @@
     }
     if ([1, 2, 3, 4, 5, 10].includes(s.target)) next.target = s.target;
     if (Number.isInteger(s.repeats)) next.repeats = Math.max(1, Math.min(10, s.repeats));
-    for (const name of ['autoSpeak', 'hintChinese', 'hintPhonetic']) next[name] = s[name] === true;
+    for (const name of ['hintChinese', 'hintPhonetic', 'controlsCollapsed', 'immersiveControlsCollapsed']) {
+      if (typeof s[name] === 'boolean') next[name] = s[name];
+    }
+    // Old saves contain the former false default; opt-outs made in this version stay explicit.
+    next.autoSpeakConfigured = s.autoSpeakConfigured === true;
+    next.autoSpeak = next.autoSpeakConfigured && typeof s.autoSpeak === 'boolean' ? s.autoSpeak : true;
     return next;
   }
   const blankRecord = () => ({ seen: false, marked: false, inMistakes: false, attempts: 0,
     correct: 0, wrong: 0, streak: 0, corrections: 0, lastPracticed: null });
-  let settings = { ...defaults }, records = {}, history = [], persistenceOK = true, savedSession = null;
+  let settings = { ...defaults }, records = {}, history = [], persistenceOK = true, savedSession = null,
+    legacyStoragePending = false;
   try {
-    const saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
+    const stored = localStorage.getItem(storageKey);
+    const legacyStored = stored === null ? localStorage.getItem(legacyStorageKey) : null;
+    const saved = JSON.parse(stored ?? legacyStored ?? 'null');
     if (saved && typeof saved === 'object') {
+      legacyStoragePending = stored === null && legacyStored !== null;
       settings = readSettings(saved.settings);
       savedSession = saved.session;
       for (const item of entries) {
@@ -81,6 +92,10 @@
         session: { mode: current.mode, pool: current.pool, category: current.category, ids: current.ids,
           cursor: current.cursor, result: current.result, flipped: current.flipped, hints: current.hints } }));
       persistenceOK = true;
+      // Retire the old key only after the migrated records have been saved successfully.
+      if (legacyStoragePending) {
+        try { localStorage.removeItem(legacyStorageKey); legacyStoragePending = false; } catch (_) {}
+      }
     } catch (_) { persistenceOK = false; }
     $('save-status').textContent = persistenceOK ? '' : '本次记录未能保存，请在统计页导出备份';
     $('save-status').hidden = persistenceOK;
@@ -193,7 +208,7 @@
     const synonyms = Array.isArray(item.synonyms) ? item.synonyms.filter(s => s && s.english).map(s =>
       `<div class="synonym-chip"><b>${esc(s.english)}</b>${s.chinese ? ` · ${esc(s.chinese)}` : ''}${s.sense || s.note ? `<small>${esc([s.sense, s.note].filter(Boolean).join(' · '))}</small>` : ''}</div>`).join('') : '';
     const aliases = (item.acceptedAnswers || []).filter(a => a !== item.original);
-    return `${meanings ? `<ul class="meaning-list">${meanings}</ul>` : ''}${item.pronunciationNote ? `<p class="pronunciation-note">读音提示：${esc(item.pronunciationNote)}</p>` : ''}${synonyms ? `<section class="synonym-details"><h3>同义替换</h3><div class="synonym-line">${synonyms}<p>学习提示，不计为本题答案。</p></div></section>` : ''}${aliases.length ? `<p>也接受：${aliases.map(esc).join(' / ')}</p>` : ''}`;
+    return `${meanings ? `<ul class="meaning-list">${meanings}</ul>` : ''}${item.pronunciationNote ? `<p class="pronunciation-note">读音提示：${esc(item.pronunciationNote)}</p>` : ''}${synonyms ? `<section class="synonym-details"><h3>同义替换</h3><div class="synonym-line">${synonyms}</div></section>` : ''}${aliases.length ? `<p>也接受：${aliases.map(esc).join(' / ')}</p>` : ''}`;
   }
   function submitAnswer(event) {
     event?.preventDefault();
@@ -242,6 +257,7 @@
 
   function render() {
     document.body.dataset.currentView = current.view;
+    renderControls();
     for (const view of ['practice', 'library', 'mistakes', 'stats']) $(view + '-view').hidden = current.view !== view;
     document.querySelectorAll('[data-view]').forEach(button => {
       const active = button.dataset.view === current.view;
@@ -558,6 +574,14 @@
       if (hadFocus) options.querySelector('summary').focus({ preventScroll: true });
     }
   }
+  function renderControls() {
+    const immersive = document.body.classList.contains('immersive');
+    const collapsed = settings[immersive ? 'immersiveControlsCollapsed' : 'controlsCollapsed'];
+    $('practice-controls').hidden = collapsed;
+    document.body.classList.toggle('controls-collapsed', collapsed);
+    $('toggle-controls').textContent = collapsed ? '展开操作 ⌄' : '收起操作 ⌃';
+    $('toggle-controls').setAttribute('aria-expanded', String(!collapsed));
+  }
   function openSettings() { closeOptions(); stopSpeech(); syncSettings(); $('sound-dialog').showModal(); }
   function confirm(title, description, action) {
     confirmAction = action; $('confirm-title').textContent = title;
@@ -581,6 +605,11 @@
   $('home-link').addEventListener('click', event => { event.preventDefault(); changeView('practice'); });
   $('answer-form').addEventListener('submit', submitAnswer);
   $('next').addEventListener('click', () => navigate(1));
+  $('toggle-controls').addEventListener('click', () => {
+    closeOptions();
+    const field = document.body.classList.contains('immersive') ? 'immersiveControlsCollapsed' : 'controlsCollapsed';
+    settings[field] = !settings[field]; renderControls(); save();
+  });
   $('previous').addEventListener('click', () => navigate(-1));
   $('shuffle').addEventListener('click', () => { startSession({ shuffle: true }); toast('本轮词条已重新排列'); });
   $('replay').addEventListener('click', speakCurrent);
@@ -598,7 +627,7 @@
   });
   $('pool-select').addEventListener('change', () => { if (correctionLocked()) { toast('请先完成当前题的纠错'); return; } current.pool = $('pool-select').value; startSession(); });
   $('category-select').addEventListener('change', () => { if (correctionLocked()) { toast('请先完成当前题的纠错'); return; } current.category = $('category-select').value; startSession(); });
-  $('auto-speak').addEventListener('change', () => { settings.autoSpeak = $('auto-speak').checked; save(); });
+  $('auto-speak').addEventListener('change', () => { settings.autoSpeak = $('auto-speak').checked; settings.autoSpeakConfigured = true; save(); });
   for (const kind of ['chinese', 'phonetic']) {
     $('hint-' + kind).addEventListener('click', () => {
       current.hints[kind] = !hintShown(kind); renderHints(currentItem()); save();
@@ -716,7 +745,9 @@
       return;
     }
     immersiveReturn = { view: current.view, y: window.scrollY }; closeOptions();
-    changeView('practice'); document.body.classList.add('immersive'); updateFullscreenButton(); window.scrollTo(0, 0);
+    changeView('practice'); document.body.classList.add('immersive'); renderControls(); updateFullscreenButton();
+    $(currentItem() ? current.mode === 'flashcard' ? 'replay' : current.result?.correct ? 'next' : 'answer-input' : 'toggle-controls').focus({ preventScroll: true });
+    window.scrollTo(0, 0);
     try { await document.documentElement.requestFullscreen(); }
     catch (_) { toast('已进入沉浸布局；当前浏览器未开放系统全屏。'); }
   }
@@ -727,7 +758,7 @@
   }
   function finishImmersive() {
     closeOptions();
-    document.body.classList.remove('immersive'); updateFullscreenButton();
+    document.body.classList.remove('immersive'); renderControls(); updateFullscreenButton();
     if (immersiveReturn) {
       const previous = immersiveReturn; immersiveReturn = null;
       if (!correctionLocked()) changeView(previous.view);

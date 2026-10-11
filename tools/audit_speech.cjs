@@ -4,17 +4,17 @@
 const fs=require('fs'),path=require('path'),crypto=require('crypto');
 const {pathToFileURL}=require('url');
 const {chromium,auditLaunch,auditOutput}=require('./playwright_runtime.cjs');
-const root=path.resolve(__dirname,'..','app'),reports=auditOutput();fs.mkdirSync(reports,{recursive:true});
+const root=path.resolve(__dirname,'..'),reports=auditOutput();fs.mkdirSync(reports,{recursive:true});
 const urlArg=process.argv.find(x=>x.startsWith('--url='));
 const base=urlArg?urlArg.slice(6):'http://127.0.0.1:11545/';
 if(process.argv.includes('--headed'))throw new Error('Visible browser tests are disabled by the user. Run this audit headlessly.');
-const data=JSON.parse(fs.readFileSync(path.join(root,'data/vocab.json'),'utf8'));
+const data=JSON.parse(fs.readFileSync(path.join(root,'app/data/vocab.json'),'utf8'));
 const items=data.items||data;
 const tag='final';
 const report={audit:'native-speech-and-browser-compatibility',phase:tag,startedAt:new Date().toISOString(),
   base,headless:true,preStoredAudio:false,subjectiveListening:false,
   datasetCount:items.length,checks:[],findings:[],errors:[],nativeCases:[],controlledCases:[],sourceHashes:{},limitations:[]};
-const sourceFiles=['index.html','app.js','styles.css','data/vocab.json','data/vocab.js'];
+const sourceFiles=['index.html','app/app.js','app/styles.css','app/data/vocab.json','app/data/vocab.js'];
 for(const filename of sourceFiles){
   const full=path.join(root,filename);if(fs.existsSync(full))report.sourceHashes[filename]=crypto.createHash('sha256').update(fs.readFileSync(full)).digest('hex');
 }
@@ -145,7 +145,8 @@ async function controlsCase(browser,name){
     check(prefix+'-AltR-replays-and-cancels-old',s.calls.length===count+1&&s.ops.at(-1)?.name==='cancel'&&s.input==='typingr ',{calls:s.calls.slice(-2),ops:s.ops.slice(-2),input:s.input});
     await page.locator('#play-main').focus();count=s.calls.length;await page.keyboard.press('r');s=await capture(page);
     check(prefix+'-R-replays-and-cancels-old',s.calls.length===count+1&&s.ops.at(-1)?.name==='cancel',s.ops.slice(-2));
-    await page.locator('#next').click();s=await capture(page);check(prefix+'-next-stops-playing',!s.playing&&s.ops.at(-1)?.name==='cancel',s.ops.slice(-2));
+    count=s.calls.length;
+    await page.locator('#next').click();s=await capture(page);check(prefix+'-next-replaces-old-with-default-autoplay',s.calls.length===count+1&&s.calls.at(-1)?.text===items[1].speakText&&s.ops.at(-1)?.name==='cancel',{call:s.calls.at(-1),ops:s.ops.slice(-2)});
     await page.locator('#play-main').click();await page.locator('[data-view=library]').click();s=await capture(page);
     check(prefix+'-view-stops-playing',!s.playing&&s.ops.at(-1)?.name==='cancel',s.ops.slice(-2));
     await page.locator('[data-view=practice]').click();await page.locator('#play-main').click();await page.locator('[data-mode=chinese]').click();s=await capture(page);

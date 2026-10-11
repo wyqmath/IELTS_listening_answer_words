@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md) · [App and practice method](../README.md)
 
-These tools generate, maintain and verify vocabulary. Daily practice only needs `app/index.html` or the `打开网页.cmd` launcher in this folder. Python scripts use the standard library and require Python 3.10+. Run the commands below from the repository root.
+These tools generate, maintain and verify vocabulary. Daily practice only needs `index.html` or the `打开网页.cmd` launcher in this folder. Python scripts use the standard library and require Python 3.10+. Run the commands below from the repository root.
 
 ## Custom vocabulary
 
@@ -122,7 +122,7 @@ Speech audits distinguish native events from controlled simulation. Simulation c
 
 | Script | Purpose |
 | --- | --- |
-| `打开网页.cmd` / `启动本地预览.cmd` | Open `app/index.html` / start the localhost preview |
+| `打开网页.cmd` / `启动本地预览.cmd` | Open `index.html` / start the localhost preview |
 | `vocab_schema.py` / `build_vocab.py` | Custom annotated JSON validation/export |
 | `full_pipeline.py` | Source parsing, batches, resume, repair and export |
 | `review_annotations.py` / `apply_review_patch.py` | Semantic review / confirmed field repairs |

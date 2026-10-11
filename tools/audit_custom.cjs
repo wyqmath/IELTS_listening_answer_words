@@ -6,7 +6,7 @@ const http = require('node:http');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { chromium, auditLaunch, auditOutput } = require('./playwright_runtime.cjs');
-const root = path.resolve(__dirname, '..', 'app');
+const root = path.resolve(__dirname, '..');
 const example = JSON.parse(fs.readFileSync(path.join(__dirname, 'examples/vocab.json'), 'utf8'));
 const report = { scope: 'custom sample data; simulated speech controls, no audible-output claim', cases: [] };
 let server, browser;
@@ -25,8 +25,8 @@ function speechControls() {
 async function startServer() {
   const files = new Map([
     ['/', ['index.html', 'text/html']], ['/index.html', ['index.html', 'text/html']],
-    ['/app.js', ['app.js', 'text/javascript']], ['/styles.css', ['styles.css', 'text/css']],
-    ['/data/vocab.js', ['data/vocab.js', 'text/javascript']], ['/assets/icon.svg', ['assets/icon.svg', 'image/svg+xml']]
+    ['/app/app.js', ['app/app.js', 'text/javascript']], ['/app/styles.css', ['app/styles.css', 'text/css']],
+    ['/app/data/vocab.js', ['app/data/vocab.js', 'text/javascript']], ['/app/assets/icon.svg', ['app/assets/icon.svg', 'image/svg+xml']]
   ]);
   server = http.createServer((req, res) => {
     const file = files.get(new URL(req.url, 'http://localhost').pathname);
@@ -41,7 +41,8 @@ async function startServer() {
 async function practiceCase(channel, transport, url) {
   const context = await browser.newContext({ acceptDownloads: true, viewport: { width: 1280, height: 900 } });
   let active = structuredClone(example);
-  const key = `tingjian.v2.${example.datasetId}`, legacy = { version: 2, dataset: '1533', records: { sentinel: { marked: true } } };
+  const key = `tingjian.${example.datasetId}`, oldCustomKey = `tingjian.v2.${example.datasetId}`,
+    legacy = { version: 2, dataset: '1533', records: { sentinel: { marked: true } } };
   await context.route('**/data/vocab.js', route => route.fulfill({ contentType: 'text/javascript',
     body: 'window.LISTENING_DATA = ' + JSON.stringify(active) + ';' }));
   await context.addInitScript(speechControls);
@@ -66,6 +67,14 @@ async function practiceCase(channel, transport, url) {
     await page.locator('[data-mode="listen"]').click();
     await page.locator('#bookmark').click();
     check('custom bookmark persists', (await state()).records['demo-word'].marked);
+    await context.addInitScript(({ saved, key, oldCustomKey }) => {
+      if (sessionStorage.getItem('custom-migration-seeded')) return;
+      localStorage.setItem(oldCustomKey, JSON.stringify(saved)); localStorage.removeItem(key);
+      sessionStorage.setItem('custom-migration-seeded', 'true');
+    }, { saved: await state(), key, oldCustomKey });
+    await page.reload();
+    check('custom records migrate to the key without a version', (await state()).records['demo-word'].marked);
+    check('custom old key retires after successful migration', await page.evaluate(k => localStorage.getItem(k), oldCustomKey) === null);
     await page.locator('#hint-chinese').click();
     check('single Chinese hint is shown', await page.locator('#question-hints').isVisible());
     await page.locator('#answer-input').fill('wrong');
@@ -120,7 +129,7 @@ async function practiceCase(channel, transport, url) {
     active = structuredClone(example); await go();
     check('switching back restores the original bookmark', await page.locator('#bookmark').getAttribute('aria-pressed') === 'true');
     active = structuredClone(example); delete active.datasetId; await go();
-    let generatedKey = await page.evaluate(() => Object.keys(localStorage).find(k => k.startsWith('tingjian.v2.vocab-')));
+    let generatedKey = await page.evaluate(() => Object.keys(localStorage).find(k => k.startsWith('tingjian.vocab-')));
     check('missing identity derives a stable key', Boolean(generatedKey));
     await page.locator('#bookmark').click(); await page.reload();
     check('derived identity survives reload', await page.locator('#bookmark').getAttribute('aria-pressed') === 'true');

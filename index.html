@@ -6,16 +6,16 @@
   <meta name="theme-color" content="#1c594c">
   <meta name="description" content="雅思听力答案词、英语拼写与词卡练习，支持自备词库用于四六级等学习。">
   <title>听见 · 听力词卡</title>
-  <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
-  <link rel="stylesheet" href="styles.css?v=20261011-public">
-  <script src="data/vocab.js" defer></script>
-  <script src="app.js?v=20261011-public" defer></script>
+  <link rel="icon" type="image/svg+xml" href="app/assets/icon.svg">
+  <link rel="stylesheet" href="app/styles.css?v=20261011-controls">
+  <script src="app/data/vocab.js" defer></script>
+  <script src="app/app.js?v=20261011-controls" defer></script>
 </head>
 <body>
   <header class="site-header">
     <div class="header-inner">
       <a href="#" class="brand" id="home-link" aria-label="听见，返回练习">
-        <img src="assets/icon.svg" width="38" height="38" alt="">
+        <img src="app/assets/icon.svg" width="38" height="38" alt="">
         <span>听见</span>
       </a>
       <div class="header-actions"><button class="button quiet" id="open-fullscreen" type="button" title="进入沉浸式全屏">全屏 <span aria-hidden="true">⛶</span></button><button class="button quiet" id="open-sound" type="button">设置</button></div>
@@ -31,6 +31,8 @@
     <section id="practice-view" class="view">
       <div class="practice-layout">
         <div class="practice-main">
+          <div class="control-toggle-row"><button class="text-button" id="toggle-controls" type="button" aria-controls="practice-controls" aria-expanded="true">收起操作 ⌃</button></div>
+          <div id="practice-controls" class="practice-controls">
           <div class="practice-toolbar">
             <div class="mode-switch" role="group" aria-label="练习方式">
               <button class="mode-button active" data-mode="listen" aria-pressed="true" title="听音写答案">听音</button>
@@ -38,17 +40,17 @@
               <button class="mode-button" data-mode="phonetic" aria-pressed="false" title="看音标写英文">音标</button>
               <button class="mode-button" data-mode="flashcard" aria-pressed="false">词卡</button>
             </div>
+            <div class="practice-filter-controls">
+            <label class="practice-category" for="category-select">分类 <select id="category-select"><option value="all">所有分类</option></select></label>
             <details class="practice-options" id="practice-options">
               <summary><span id="range-label">范围</span> <span aria-hidden="true">⌄</span></summary>
               <aside class="practice-sidebar">
                 <label class="field-label" for="pool-select">词条范围</label><select id="pool-select"><option value="all">全部词条</option><option value="mistakes">错题本</option><option value="marked">已标记</option><option value="unseen">尚未练习</option></select>
-                <label class="field-label" for="category-select">分类</label><select id="category-select"><option value="all">所有分类</option></select>
                 <button class="button outlined full-width" id="shuffle" title="重新随机排列本轮词条" type="button">打乱顺序</button>
               </aside>
             </details>
+            </div>
           </div>
-          <article class="study-card" id="study-card">
-            <div class="card-top"><span class="card-category" id="card-category">常规</span><span class="card-position" id="card-position">第 01 条</span></div>
             <div class="exercise-toolbar" role="group" aria-label="练习操作">
               <button class="text-button" id="bookmark" type="button" aria-pressed="false">☆ 标记</button>
               <button class="text-button" id="toggle-mistake" type="button">＋ 加入错题</button>
@@ -60,6 +62,9 @@
               <div class="hint-buttons"><button class="text-button" id="hint-chinese" type="button" aria-pressed="false">中文提示</button><button class="text-button" id="hint-phonetic" type="button" aria-pressed="false">音标提示</button></div>
               <div class="hint-defaults"><label><input type="checkbox" id="default-chinese">默认中文</label><label><input type="checkbox" id="default-phonetic">默认音标</label></div>
             </div>
+          </div>
+          <article class="study-card" id="study-card">
+            <div class="card-top"><span class="card-category" id="card-category">常规</span><span class="card-position" id="card-position">第 01 条</span></div>
             <div id="exercise-area">
               <div class="prompt-area" id="prompt-area"></div>
               <div class="question-hints" id="question-hints" hidden></div>
@@ -95,14 +100,14 @@
       <hr>
       <label class="field-label" for="playback-repeat">每次播放几遍？</label><select id="playback-repeat"><option value="1">1 遍（默认）</option><option value="2">2 遍</option><option value="3">3 遍</option><option value="4">4 遍</option><option value="5">5 遍</option><option value="6">6 遍</option><option value="7">7 遍</option><option value="8">8 遍</option><option value="9">9 遍</option><option value="10">10 遍</option></select>
       <p class="settings-hint">播放、重听和自动朗读都按此次数，遍与遍之间短暂停顿。</p>
-      <label class="checkbox-row"><input type="checkbox" id="auto-speak">下一条自动朗读（所有模式）</label>
+      <label class="checkbox-row"><input type="checkbox" id="auto-speak" checked>下一条自动朗读（所有模式）</label>
       <label class="field-label" for="mistake-target">错题连续答对几次后移出？</label><select id="mistake-target"><option value="1">1 次</option><option value="2">2 次</option><option value="3">3 次（默认）</option><option value="4">4 次</option><option value="5">5 次</option><option value="10">10 次</option></select>
       <p class="settings-hint">新规则从下一次作答开始生效；改为较小次数不会立即清空已有错题。</p>
     </div>
   </dialog>
   <dialog id="help-dialog" class="settings-dialog">
     <form method="dialog" class="dialog-header"><h2>快捷键与判分</h2><button class="close-button" aria-label="关闭帮助" type="submit">×</button></form>
-    <div class="practice-help"><p><kbd>Enter</kbd> 答案空白时播放，填好后提交；答对或纠错完成后进入下一条。词卡中按回车朗读。</p><p><kbd>Alt+R</kbd> 随时重听；输入框外也可按 <kbd>R</kbd>。</p><p><kbd>Space</kbd> 在输入框外播放、暂停或继续；<kbd>Esc</kbd> 关闭弹窗、收起范围或退出全屏。</p><p>按钮聚焦时，回车执行该按钮的操作；输入法选字时不提交答案。</p><p id="input-help">冠词、单复数和时态要准确；大小写不影响判分。</p><p>纠错和翻卡不计独立答题正确率；同义替换是学习提示，不自动作为本题答案。</p></div>
+    <div class="practice-help"><p><kbd>Enter</kbd> 答案空白时播放，填好后提交；答对或纠错完成后进入下一条并默认朗读。词卡中按回车朗读。</p><p><kbd>Alt+R</kbd> 随时重听；输入框外也可按 <kbd>R</kbd>。</p><p><kbd>Space</kbd> 在输入框外播放、暂停或继续；<kbd>Esc</kbd> 关闭弹窗、收起范围或退出全屏。</p><p>按钮聚焦时，回车执行该按钮的操作；输入法选字时不提交答案。</p><p id="input-help">冠词、单复数和时态要准确；大小写不影响判分。</p><p>纠错和翻卡不计独立答题正确率。</p></div>
   </dialog>
   <dialog id="confirm-dialog" class="confirm-dialog"><h2 id="confirm-title"></h2><p id="confirm-text"></p><div class="button-group"><button class="button outlined" id="cancel-confirm" type="button">取消</button><button class="button primary" id="accept-confirm" type="button">确认</button></div></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>

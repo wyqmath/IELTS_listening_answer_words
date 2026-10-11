@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { chromium, auditLaunch, auditOutput } = require('./playwright_runtime.cjs');
-const root = path.resolve(__dirname, '..', 'app');
+const root = path.resolve(__dirname, '..');
 const reportDir = auditOutput();
 fs.mkdirSync(reportDir, { recursive: true });
 const headed = process.argv.includes('--headed');
@@ -16,12 +16,12 @@ const tag = 'final';
 const report = { audit: 'visual-and-ux', phase: tag, startedAt: new Date().toISOString(), base,
   browser: 'Installed Chrome', headless: !headed, datasetCount: 0, sourceHashes: {},
   checks: [], findings: [], screenshots: [], errors: [], observations: [] };
-const sourceFiles = ['index.html', 'app.js', 'styles.css', 'data/vocab.js', 'data/vocab.json'];
+const sourceFiles = ['index.html', 'app/app.js', 'app/styles.css', 'app/data/vocab.js', 'app/data/vocab.json'];
 for (const filename of sourceFiles) {
   const full = path.join(root, filename);
   if (fs.existsSync(full)) report.sourceHashes[filename] = crypto.createHash('sha256').update(fs.readFileSync(full)).digest('hex');
 }
-const data = JSON.parse(fs.readFileSync(path.join(root, 'data/vocab.json'), 'utf8'));
+const data = JSON.parse(fs.readFileSync(path.join(root, 'app/data/vocab.json'), 'utf8'));
 const items = data.items || data;
 report.datasetCount = items.length;
 const longItem = [...items].sort((a, b) => JSON.stringify({m:b.meanings,s:b.synonyms}).length - JSON.stringify({m:a.meanings,s:a.synonyms}).length)[0];
@@ -84,7 +84,7 @@ function savedState({mode='listen',id=items[0].id,flipped=false,mistakes=0,stats
 let browser;
 async function makePage(viewport, seed = {}) {
   const context = await browser.newContext({ viewport, locale:'zh-CN', timezoneId:'Asia/Shanghai', reducedMotion:'reduce' });
-  await context.addInitScript(seed => { localStorage.setItem('tingjian.full.v2',JSON.stringify(seed)); }, savedState(seed));
+  await context.addInitScript(seed => { localStorage.setItem('tingjian.full',JSON.stringify(seed)); }, savedState(seed));
   const page = await context.newPage();
   page.setDefaultTimeout(7000);
   const failures=[],requests=[];
@@ -236,10 +236,12 @@ async function fullscreen(width,height) {
       }).map(el=>el.id||el.getAttribute('aria-label')||el.textContent.trim()),
       pageHeight:document.documentElement.scrollHeight,viewport:innerHeight,scrollY}));
     check(`fullscreen-no-brand-or-extra-settings-${width}`,simplified.brand==='none'&&simplified.settings==='none',simplified);
-    for(const selector of ['#bookmark','#toggle-mistake','#previous','#sound-shortcut','#open-help','[data-mode=listen]','[data-mode=chinese]','[data-mode=phonetic]','[data-mode=flashcard]','#hint-chinese','#hint-phonetic','#default-chinese','#default-phonetic']) check(`fullscreen-requested-control-visible-${width}-${selector}`,await page.locator(selector).isVisible(),{selector});
+    for(const selector of ['#bookmark','#toggle-mistake','#previous','#sound-shortcut','#open-help','[data-mode=listen]','[data-mode=chinese]','[data-mode=phonetic]','[data-mode=flashcard]','#hint-chinese','#hint-phonetic','#default-chinese','#default-phonetic','#category-select']) check(`fullscreen-controls-start-folded-${width}-${selector}`,!await page.locator(selector).isVisible(),{selector});
     check(`fullscreen-short-question-no-blank-scroll-${width}`,simplified.pageHeight<=simplified.viewport+2,simplified);
     await snap(page,`${width}-fullscreen`);
     const m=await metrics(page);check(`no-horizontal-overflow-${width}-fullscreen`,m.documentWidth<=m.width+2,m);
+    await page.locator('#toggle-controls').click();
+    check(`fullscreen-controls-expand-${width}`,await page.locator('#category-select').isVisible()&&await page.locator('#bookmark').isVisible(),{expanded:await page.locator('#practice-controls').isVisible()});
     await page.locator('#practice-options>summary').click();
     const menuBounds=await page.locator('.practice-sidebar').boundingBox();
     check(`fullscreen-range-fits-${width}`,menuBounds.x>=0&&menuBounds.x+menuBounds.width<=width+2&&menuBounds.y>=0&&menuBounds.y+menuBounds.height<=height+2,menuBounds);

@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文** · [网页与练习方式](../README.zh-CN.md)
 
-工具用于生成、维护和验证词库；日常练习可直接打开 `app/index.html` 或本文件夹中的 `打开网页.cmd`。Python 脚本使用标准库，需要 Python 3.10 以上。以下命令均在仓库根目录运行。
+工具用于生成、维护和验证词库；日常练习可直接打开 `index.html` 或本文件夹中的 `打开网页.cmd`。Python 脚本使用标准库，需要 Python 3.10 以上。以下命令均在仓库根目录运行。
 
 ## 自备词库
 
@@ -122,7 +122,7 @@ npm --prefix tools run test:custom
 
 | 脚本 | 用途 |
 | --- | --- |
-| `打开网页.cmd` / `启动本地预览.cmd` | 打开 `app/index.html`／启动本地预览 |
+| `打开网页.cmd` / `启动本地预览.cmd` | 打开 `index.html`／启动本地预览 |
 | `vocab_schema.py` / `build_vocab.py` | 自备完整 JSON 校验与导出 |
 | `full_pipeline.py` | 原始列表解析、批量标注、续跑、修补及导出 |
 | `review_annotations.py` / `apply_review_patch.py` | 语义审校／确认后的字段修补 |
