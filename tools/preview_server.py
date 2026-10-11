@@ -1,4 +1,4 @@
-"""Serve this folder on localhost; index.html also supports direct opening."""
+"""Serve app/ on localhost; app/index.html also supports direct opening."""
 import argparse
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -8,7 +8,7 @@ import urllib.request
 parser = argparse.ArgumentParser()
 parser.add_argument('--port', type=int, default=11545)
 args = parser.parse_args()
-root = Path(__file__).resolve().parents[1]
+root = Path(__file__).resolve().parents[1] / 'app'
 
 
 class LocalPreviewServer(ThreadingHTTPServer):

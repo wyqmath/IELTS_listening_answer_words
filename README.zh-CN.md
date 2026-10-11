@@ -6,14 +6,24 @@
 
 这套练习系统也可用于四六级或其他英语学习。自备词库没有固定条数限制；给自己的词条标注英文、音标、中文等信息后，即可用同一套网页练习。附带词库是答案词汇汇总，朗读使用合成语音，不是原始试题录音。
 
+## 目录结构
+
+```text
+README.md / README.zh-CN.md
+app/       网页、样式、脚本、图标与词库
+tools/     Windows 启动脚本、标注工具、审核与示例
+```
+
+原始学习笔记不随项目保留。正式词库在 `app/data/`，自备词库示例在 `tools/examples/`。
+
 ## 打开网页
 
-下载后保留整个文件夹，双击 `index.html` 或 `打开网页.cmd`。推荐 Chrome 或 Edge；日常练习无需安装依赖、注册账号或配置 API。
+下载后保留整个文件夹，双击 [`app/index.html`](app/index.html) 或 `tools/打开网页.cmd`。推荐 Chrome 或 Edge；日常练习无需安装依赖、注册账号或配置 API。
 
 | 启动文件 | 用途 | 需要什么 |
 | --- | --- | --- |
-| `打开网页.cmd` | 用默认浏览器打开本地 HTML | 浏览器 |
-| `启动本地预览.cmd` | 启动本地服务，访问 `http://127.0.0.1:11545/` | 浏览器、Python 3 |
+| `tools/打开网页.cmd` | 用默认浏览器打开本地 HTML | 浏览器 |
+| `tools/启动本地预览.cmd` | 启动本地服务，访问 `http://127.0.0.1:11545/` | 浏览器、Python 3 |
 
 两个 CMD 是 Windows 启动脚本，任选一种即可。预览服务需保留终端窗口；按 `Ctrl+C` 停止。其他系统可直接打开 HTML，或运行 `python tools/preview_server.py`。网页不会自动刷新。
 
@@ -76,19 +86,19 @@
 
 ## 使用自己的词库
 
-`data/vocab.json` 是正式结构化数据，`data/vocab.js` 是相同内容的网页加载副本，支持双击 HTML。替换词库需要同步生成这两个文件。
+`app/data/vocab.json` 是正式结构化数据，`app/data/vocab.js` 是相同内容的网页加载副本，支持双击 HTML。替换词库需要同步生成这两个文件。
 
-**手动标注**：复制 [examples/vocab.json](examples/vocab.json)，填写完整条目。先在本地目录导出、校验；确认后加 `--replace` 替换网页词库。替换前保存原词库和学习备份。
+**手动标注**：复制 [tools/examples/vocab.json](tools/examples/vocab.json)，填写完整条目。先在本地目录导出、校验；确认后加 `--replace` 替换网页词库。替换前保存原词库和学习备份。
 
 ```sh
-python tools/build_vocab.py --input examples/vocab.json --output-dir private/my-vocab
+python tools/build_vocab.py --input tools/examples/vocab.json --output-dir private/my-vocab
 python tools/verify_full.py --data private/my-vocab/vocab.json --js private/my-vocab/vocab.js
-python tools/build_vocab.py --input examples/vocab.json --output-dir data --replace
+python tools/build_vocab.py --input tools/examples/vocab.json --output-dir app/data --replace
 ```
 
 将命令中的示例输入换成自己的标注 JSON。普通词、短语、专名包含中文义项；数字等可只给英文读法和音标。`acceptedAnswers` 明确列出可接受答案，`synonyms` 单独存学习替换建议。
 
-**可选 API 标注**：参考 [examples/source.json](examples/source.json) 准备原始列表，再用 `tools/full_pipeline.py` 批量生成音标、中文义项及同义建议。接口、模型和密钥只在本地运行时提供，没有固定服务商配置；网页练习不调用标注 API。配置、思考参数及审校方法见 [中文工具说明](tools/README.zh-CN.md) / [English tools guide](tools/README.md)。自动标注仍需要检查释义、读音和答案规则。
+**可选 API 标注**：参考 [tools/examples/source.json](tools/examples/source.json) 准备原始列表，再用 `tools/full_pipeline.py` 批量生成音标、中文义项及同义建议。接口、模型和密钥只在本地运行时提供，没有固定服务商配置；网页练习不调用标注 API。配置、思考参数及审校方法见 [中文工具说明](tools/README.zh-CN.md) / [English tools guide](tools/README.md)。自动标注仍需要检查释义、读音和答案规则。
 
 默认词库保留原条目、顺序、重复词和稳定 ID，19 条待分类条目已归类。专名的估计读音或不同义项读音会在备注中说明。
 
@@ -97,13 +107,13 @@ python tools/build_vocab.py --input examples/vocab.json --output-dir data --repl
 前端为静态 HTML/CSS/JavaScript，无构建步骤。Python 工具使用标准库，需要 Python 3.10 以上。浏览器测试才需要 Node.js、Playwright 和相应浏览器：
 
 ```sh
-npm ci
-npm run test:flows
-npm run test:custom
+npm --prefix tools ci
+npm --prefix tools run test:flows
+npm --prefix tools run test:custom
 python tools/verify_full.py
 python tools/check_public.py
 ```
 
-测试使用独立后台浏览器，结果默认写入系统临时目录。完整流程审核针对附带的雅思词库；自定义词库审核使用示例数据，验证复用、判分和记录隔离。
+以上命令在仓库根目录运行，审核依赖和包配置都放在 `tools/`。测试使用独立后台浏览器，结果默认写入系统临时目录。完整流程审核针对附带的雅思词库；自定义词库审核使用示例数据，验证复用、判分和记录隔离。
 
 `.gitignore` 只允许网页、正式词库、示例、文档和工具进入 Git；原始笔记、标注中间文件、日志、报告、学习备份与实际 API 配置排除在外。发布检查扫描候选文件、暂存内容和 Git 历史，报告仅显示文件名及问题类别。更改后应重新运行检查，并核对实际暂存文件。

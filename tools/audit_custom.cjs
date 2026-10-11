@@ -6,8 +6,8 @@ const http = require('node:http');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { chromium, auditLaunch, auditOutput } = require('./playwright_runtime.cjs');
-const root = path.resolve(__dirname, '..');
-const example = JSON.parse(fs.readFileSync(path.join(root, 'examples/vocab.json'), 'utf8'));
+const root = path.resolve(__dirname, '..', 'app');
+const example = JSON.parse(fs.readFileSync(path.join(__dirname, 'examples/vocab.json'), 'utf8'));
 const report = { scope: 'custom sample data; simulated speech controls, no audible-output claim', cases: [] };
 let server, browser;
 

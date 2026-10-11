@@ -4,7 +4,7 @@
 const fs=require('fs'),path=require('path'),crypto=require('crypto');
 const {pathToFileURL}=require('url');
 const {chromium,auditLaunch,auditOutput}=require('./playwright_runtime.cjs');
-const root=path.resolve(__dirname,'..'),reports=auditOutput();fs.mkdirSync(reports,{recursive:true});
+const root=path.resolve(__dirname,'..','app'),reports=auditOutput();fs.mkdirSync(reports,{recursive:true});
 const urlArg=process.argv.find(x=>x.startsWith('--url='));
 const base=urlArg?urlArg.slice(6):'http://127.0.0.1:11545/';
 if(process.argv.includes('--headed'))throw new Error('Visible browser tests are disabled by the user. Run this audit headlessly.');

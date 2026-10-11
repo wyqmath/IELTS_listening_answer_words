@@ -4,27 +4,19 @@
 !/.gitattributes
 !/README.md
 !/README.zh-CN.md
-!/package.json
-!/package-lock.json
-!/index.html
-!/app.js
-!/styles.css
-!/打开网页.cmd
-!/启动本地预览.cmd
 
-!/assets/
-/assets/*
-!/assets/icon.svg
-
-!/data/
-/data/*
-!/data/vocab.json
-!/data/vocab.js
-
-!/examples/
-/examples/*
-!/examples/source.json
-!/examples/vocab.json
+!/app/
+/app/*
+!/app/index.html
+!/app/app.js
+!/app/styles.css
+!/app/assets/
+/app/assets/*
+!/app/assets/icon.svg
+!/app/data/
+/app/data/*
+!/app/data/vocab.json
+!/app/data/vocab.js
 
 !/tools/
 /tools/*
@@ -32,6 +24,14 @@
 !/tools/*.cjs
 !/tools/README.md
 !/tools/README.zh-CN.md
+!/tools/package.json
+!/tools/package-lock.json
+!/tools/打开网页.cmd
+!/tools/启动本地预览.cmd
+!/tools/examples/
+/tools/examples/*
+!/tools/examples/source.json
+!/tools/examples/vocab.json
 
 # Never publish local credentials, original notes, backups or study records.
 .env
@@ -47,7 +47,7 @@
 *.py[cod]
 /private/
 /reports/
-/node_modules/
+**/node_modules/
 /dist/
 /build/
 /tmp/

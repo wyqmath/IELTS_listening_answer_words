@@ -106,7 +106,7 @@ def review_batch(key: str, rows: list[dict], items: list[dict], retries: int) ->
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source", type=Path, default=pipeline.DEFAULT_SOURCE)
+    parser.add_argument("--source", type=Path, required=True, help="the local source used for annotation")
     parser.add_argument("--data", type=Path, default=pipeline.VOCAB_PATH)
     parser.add_argument("--output-dir", type=Path, help="review output directory; defaults to the vocabulary directory")
     parser.add_argument("--batch-size", type=int, default=20)
@@ -115,6 +115,8 @@ def main() -> int:
     parser.add_argument("--reset", action="store_true")
     parser.add_argument("--ids", help="review a specific repaired set")
     args = parser.parse_args()
+    if not args.source.is_file():
+        parser.error("The specified local source is missing")
     global REVIEW_PATH, REVIEW_STATE
     output_dir = args.output_dir or args.data.parent
     REVIEW_PATH = output_dir / 'quality_review.json'

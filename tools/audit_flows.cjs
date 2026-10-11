@@ -1,6 +1,6 @@
 /*
  * Independent browser audit of the full listening trainer.
- * Run: npm install, then node tools/audit_flows.cjs
+ * Run: npm --prefix tools ci, then node tools/audit_flows.cjs
  * Options: --url=http://127.0.0.1:11545/ --only=case-id --transport=http
  * Always headless. Without --url, an isolated random-port server is used.
  * --headed is rejected to avoid interrupting the user's active browser.
@@ -14,7 +14,7 @@ const assert = require('node:assert/strict');
 const { pathToFileURL } = require('node:url');
 const { chromium, auditLaunch, auditOutput } = require('./playwright_runtime.cjs');
 
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname, '..', 'app');
 const args = process.argv.slice(2);
 if (args.includes('--headed')) throw new Error('Visible browser testing is disabled. Run this audit headlessly, in its isolated browser context.');
 const headed = false;

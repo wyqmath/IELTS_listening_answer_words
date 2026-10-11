@@ -2,11 +2,11 @@
 
 [English](README.md) | **简体中文** · [网页与练习方式](../README.zh-CN.md)
 
-工具用于生成、维护和验证词库；日常练习只需网页。Python 脚本使用标准库，需要 Python 3.10 以上。
+工具用于生成、维护和验证词库；日常练习可直接打开 `app/index.html` 或本文件夹中的 `打开网页.cmd`。Python 脚本使用标准库，需要 Python 3.10 以上。以下命令均在仓库根目录运行。
 
 ## 自备词库
 
-四六级或其他词库可用 JSON 输入，条数不限，不要求沿用雅思的分类。参考 [原始列表示例](../examples/source.json) 和 [完整标注示例](../examples/vocab.json)。旧 Markdown 解析器只适用于原始 1533 条笔记格式，通用词库请使用 JSON。
+四六级或其他词库可用 JSON 输入，条数不限，不要求沿用雅思的分类。参考 [原始列表示例](examples/source.json) 和 [完整标注示例](examples/vocab.json)。旧 Markdown 解析器只适用于原始 1533 条笔记格式，通用词库请使用 JSON。
 
 原始 JSON 可以是字符串数组、对象数组或带 `items` 数组的对象。对象必填 `original`；可选 `id`、`category`、`type`、`sourceMeaning`。省略 ID 时按顺序生成，之后修订列表应保留稳定 ID。`type` 支持 `word`、`phrase`、`name`、`code`、`number`、`time`、`date`，数字等建议明确填写类型。
 
@@ -32,14 +32,14 @@
 复制完整标注示例，编辑自己的文件，然后先导出到本地目录：
 
 ```sh
-python tools/build_vocab.py --input examples/vocab.json --output-dir private/my-vocab
+python tools/build_vocab.py --input tools/examples/vocab.json --output-dir private/my-vocab
 python tools/verify_full.py --data private/my-vocab/vocab.json --js private/my-vocab/vocab.js
 ```
 
 确认内容后，替换命令中的输入路径，并用 `--replace` 更新网页词库：
 
 ```sh
-python tools/build_vocab.py --input examples/vocab.json --output-dir data --replace
+python tools/build_vocab.py --input tools/examples/vocab.json --output-dir app/data --replace
 python tools/verify_full.py
 ```
 
@@ -49,10 +49,12 @@ python tools/verify_full.py
 
 流程为：解析原始列表 → 本地确定英文读法及答案规则 → 批量结构化标注 → 语义审校 → 修补确认的问题 → 验证并导出。API 生成完整英式 IPA、常见中文义项、按义项匹配的同义建议和读音备注；来源文本作为数据处理。自动输出仍须人工检查，格式通过不代表语义全对。
 
+标注、审校和修补工具必须用 `--source` 明确指定自己的本地输入，不再默认读取原始文档。词库默认输出到 `app/data/`；准备新词库时请先使用单独的输出目录。
+
 只解析原始列表，无需 API：
 
 ```sh
-python tools/full_pipeline.py --source examples/source.json --prepare-only --output-dir private/my-annotation
+python tools/full_pipeline.py --source tools/examples/source.json --prepare-only --output-dir private/my-annotation
 ```
 
 标注使用兼容 Chat Completions 的 HTTPS 接口和 `response_format: {"type":"json_object"}`。必须在本地运行时提供完整请求 URL、模型与密钥；仓库没有默认服务商、实际地址或固定模型，`.env` 不会自动加载。
@@ -62,7 +64,7 @@ python tools/full_pipeline.py --source examples/source.json --prepare-only --out
 ```powershell
 $env:LISTENING_API_URL = Read-Host '完整 HTTPS Chat Completions 请求地址'
 $env:LISTENING_API_MODEL = Read-Host '模型名称'
-python tools/full_pipeline.py --source examples/source.json --output-dir private/my-annotation --batch-size 12 --workers 4
+python tools/full_pipeline.py --source tools/examples/source.json --output-dir private/my-annotation --batch-size 12 --workers 4
 ```
 
 脚本会隐藏输入密钥，不保存到文件。自动化可通过进程环境变量 `LISTENING_API_KEY` 提供。URL 不得包含用户名、密码、查询参数或片段。实际配置只供标注／审校脚本使用，不进入前端或词库。
@@ -83,9 +85,9 @@ $env:LISTENING_API_REASONING_EFFORT = Read-Host '接口支持的推理强度'
 对 API 生成的自备词库，可运行独立审校：
 
 ```sh
-python tools/review_annotations.py --source examples/source.json --data private/my-annotation/vocab.json --batch-size 20 --workers 4
-python tools/full_pipeline.py --source examples/source.json --output-dir private/my-annotation --repair --ids demo-word --feedback private/my-annotation/quality_review.json
-python tools/verify_full.py --source examples/source.json --data private/my-annotation/vocab.json --js private/my-annotation/vocab.js
+python tools/review_annotations.py --source tools/examples/source.json --data private/my-annotation/vocab.json --batch-size 20 --workers 4
+python tools/full_pipeline.py --source tools/examples/source.json --output-dir private/my-annotation --repair --ids demo-word --feedback private/my-annotation/quality_review.json
+python tools/verify_full.py --source tools/examples/source.json --data private/my-annotation/vocab.json --js private/my-annotation/vocab.js
 ```
 
 审校输出默认位于输入词库目录，可用 `--output-dir` 指定。ID 只是示例，需改成确有问题的词条；确认后修补，再复核。手动标注的 JSON 使用基础 `verify_full.py` 校验，不需要来源签名。
@@ -93,7 +95,7 @@ python tools/verify_full.py --source examples/source.json --data private/my-anno
 手工修补用 `apply_review_patch.py`，格式为 `{"items":[{"id":"demo-word","fields":{"pronunciationNote":"备注"}}]}`。只允许改 `phonetic`、`meanings`、`synonyms`、`pronunciationNote`，保留原答案、分类及别名：
 
 ```sh
-python tools/apply_review_patch.py private/confirmed-patch.json --source examples/source.json --output-dir private/my-annotation
+python tools/apply_review_patch.py private/confirmed-patch.json --source tools/examples/source.json --output-dir private/my-annotation
 ```
 
 基础验证无需原始笔记或 API；加 `--source` 时进一步核对 API 流水线的来源签名、身份、顺序和本地答案规则。删除中间检查点后，可从同一来源的完整生成词库恢复；恢复会保留词库标识。
@@ -101,14 +103,16 @@ python tools/apply_review_patch.py private/confirmed-patch.json --source example
 ## 浏览器审核
 
 ```sh
-npm ci
-npm run test:flows
-npm run test:custom
+npm --prefix tools ci
+npm --prefix tools run test:flows
+npm --prefix tools run test:custom
 ```
 
-完整流程审核自行启动随机端口的本地服务器，也检查直接打开 HTML。其他附带词库审核先运行 `python tools/preview_server.py`，再运行 `npm run test:browser`、`npm run test:visual` 或 `npm run test:speech`；可用 `--url` 指向其他本地预览地址。
+完整流程审核自行启动随机端口的本地服务器，也检查直接打开 HTML。其他附带词库审核先运行 `python tools/preview_server.py`，再运行 `npm --prefix tools run test:browser`、`npm --prefix tools run test:visual` 或 `npm --prefix tools run test:speech`；可用 `--url` 指向其他本地预览地址。
 
-所有审核使用独立后台浏览器，不操作已有用户页面。Playwright 默认读取安装的 Chrome；适用的审核可通过 `AUDIT_BROWSER=chrome`、`msedge` 或 `chromium` 选通道，Chrome/Edge 兼容性审核会分别启动两者。Chromium 需另运行 `npx playwright install chromium`。已有 Playwright 模块可以通过 `AUDIT_PLAYWRIGHT` 提供，仓库不保存本机安装路径。
+换端口时可直接传入地址，例如 `node tools/audit_visual.cjs --url=http://127.0.0.1:11546/`。Windows PowerShell 中通过 npm 的 `--` 转发额外参数时，使用 `npm.cmd`。
+
+所有审核使用独立后台浏览器，不操作已有用户页面。Playwright 默认读取安装的 Chrome；适用的审核可通过 `AUDIT_BROWSER=chrome`、`msedge` 或 `chromium` 选通道，Chrome/Edge 兼容性审核会分别启动两者。Chromium 需另运行 `npm --prefix tools exec -- playwright install chromium`。已有 Playwright 模块可以通过 `AUDIT_PLAYWRIGHT` 提供，仓库不保存本机安装路径。
 
 结果和截图默认写入系统临时目录中的 `tingjian-audit`，可用 `AUDIT_OUTPUT_DIR` 改位置。完整流程、布局和兼容性审核针对默认雅思词库；`audit_custom.cjs` 使用示例词库验证任意条数、四模式、数字别名、纠错、备份与记录隔离。
 
@@ -118,6 +122,7 @@ npm run test:custom
 
 | 脚本 | 用途 |
 | --- | --- |
+| `打开网页.cmd` / `启动本地预览.cmd` | 打开 `app/index.html`／启动本地预览 |
 | `vocab_schema.py` / `build_vocab.py` | 自备完整 JSON 校验与导出 |
 | `full_pipeline.py` | 原始列表解析、批量标注、续跑、修补及导出 |
 | `review_annotations.py` / `apply_review_patch.py` | 语义审校／确认后的字段修补 |

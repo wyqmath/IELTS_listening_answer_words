@@ -3,7 +3,7 @@
 try {
   module.exports = require(process.env.AUDIT_PLAYWRIGHT || 'playwright');
 } catch {
-  throw new Error('Playwright is required for browser audits. Run npm install, or set AUDIT_PLAYWRIGHT to an installed module.');
+  throw new Error('Playwright is required for browser audits. Run npm --prefix tools ci, or set AUDIT_PLAYWRIGHT to an installed module.');
 }
 
 // Select installed browsers by Playwright channel, without machine-specific paths.

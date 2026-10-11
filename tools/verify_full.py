@@ -8,7 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
-from full_pipeline import DEFAULT_SOURCE, VOCAB_PATH, VOCAB_JS_PATH, verify_document  # noqa: E402
+from full_pipeline import VOCAB_PATH, VOCAB_JS_PATH, verify_document  # noqa: E402
 from vocab_schema import normalize_document
 
 

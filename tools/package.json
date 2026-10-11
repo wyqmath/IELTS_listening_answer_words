@@ -4,11 +4,11 @@
   "private": true,
   "description": "IELTS listening answer vocabulary and reusable English listening, spelling and flashcard practice",
   "scripts": {
-    "test:flows": "node tools/audit_flows.cjs",
-    "test:custom": "node tools/audit_custom.cjs",
-    "test:visual": "node tools/audit_visual.cjs",
-    "test:speech": "node tools/audit_speech.cjs",
-    "test:browser": "node tools/verify_browser.cjs"
+    "test:flows": "node audit_flows.cjs",
+    "test:custom": "node audit_custom.cjs",
+    "test:visual": "node audit_visual.cjs",
+    "test:speech": "node audit_speech.cjs",
+    "test:browser": "node verify_browser.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

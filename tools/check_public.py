@@ -14,15 +14,30 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_ROOT = {
     '.gitignore', '.gitattributes', 'README.md', 'README.zh-CN.md',
-    'package.json', 'package-lock.json', 'index.html', 'app.js', 'styles.css',
-    '打开网页.cmd', '启动本地预览.cmd',
 }
-# Former public documents are still scanned for secrets in existing commits.
-HISTORICAL_PUBLIC_PATHS = {'LICENSE', 'README.en.md', '使用说明.md', 'tools/README.en.md'}
+PUBLIC_ASSETS = {
+    'app/index.html', 'app/app.js', 'app/styles.css', 'app/assets/icon.svg',
+    'app/data/vocab.json', 'app/data/vocab.js',
+    'tools/package.json', 'tools/package-lock.json',
+    'tools/打开网页.cmd', 'tools/启动本地预览.cmd',
+    'tools/examples/source.json', 'tools/examples/vocab.json',
+}
+# Former public locations remain subject to every content/secret check.
+HISTORICAL_PUBLIC_PATHS = {
+    'LICENSE', 'README.en.md', '使用说明.md', 'tools/README.en.md',
+    'package.json', 'package-lock.json', 'index.html', 'app.js', 'styles.css',
+    '打开网页.cmd', '启动本地预览.cmd', 'assets/icon.svg',
+    'data/vocab.json', 'data/vocab.js', 'examples/source.json', 'examples/vocab.json',
+}
 PRIVATE_EXAMPLES = [
     '.env', '.env.local', 'private/source.md', '1.md', 'source.md',
     'data/source_rows.json', 'data/full_annotation_state.json',
     'data/quality_review.json', 'data/full_pipeline.log', 'data/vocab.before_review.json',
+    'app/data/source_rows.json', 'app/data/full_annotation_state.json',
+    'app/data/quality_review.json', 'app/data/quality_review_state.json',
+    'app/data/full_pipeline.log', 'app/data/vocab.before_review.json', 'app/source.md',
+    'tools/.env', 'tools/node_modules/example/index.js', 'tools/reports/audit.json',
+    'tools/examples/local-notes.json',
     'reports/preview.png', 'reports/audit.json', 'node_modules/example/index.js',
     'tools/__pycache__/example.pyc', 'study-backup.json', 'dist/build-output.json',
 ]
@@ -55,7 +70,7 @@ def public_path(name: str) -> bool:
     path = PurePosixPath(name)
     if path.is_absolute() or '..' in path.parts:
         return False
-    if name in PUBLIC_ROOT or name in {'assets/icon.svg', 'data/vocab.json', 'data/vocab.js', 'examples/source.json', 'examples/vocab.json'}:
+    if name in PUBLIC_ROOT or name in PUBLIC_ASSETS:
         return True
     return (len(path.parts) == 2 and path.parts[0] == 'tools'
             and (path.suffix in {'.py', '.cjs'} or path.name in {'README.md', 'README.zh-CN.md'}))

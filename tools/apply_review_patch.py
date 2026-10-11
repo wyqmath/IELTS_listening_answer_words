@@ -13,9 +13,11 @@ ALLOWED = {"phonetic", "meanings", "synonyms", "pronunciationNote"}
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("patch", type=Path)
-    parser.add_argument("--source", type=Path, default=pipeline.DEFAULT_SOURCE)
+    parser.add_argument("--source", type=Path, required=True, help="the local source used for annotation")
     parser.add_argument("--output-dir", type=Path, help="directory containing the generated vocabulary/checkpoints")
     args = parser.parse_args()
+    if not args.source.is_file():
+        parser.error("The specified local source is missing")
     if args.output_dir:
         pipeline.configure_output_dir(args.output_dir)
     patch = json.loads(args.patch.read_text(encoding="utf-8"))

@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input', type=Path, required=True)
-    parser.add_argument('--output-dir', type=Path, default=ROOT / 'data')
+    parser.add_argument('--output-dir', type=Path, default=ROOT / 'app' / 'data')
     parser.add_argument('--replace', action='store_true', help='replace an existing vocabulary pair')
     args = parser.parse_args()
     document = normalize_document(json.loads(args.input.read_text(encoding='utf-8-sig')))

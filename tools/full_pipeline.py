@@ -7,9 +7,9 @@ read from the environment or an interactive prompt and are never written to
 disk.
 
 Examples:
-    python tools/full_pipeline.py --prepare-only
-    python tools/full_pipeline.py --batch-size 30
-    python tools/full_pipeline.py --verify
+    python tools/full_pipeline.py --source tools/examples/source.json --prepare-only --output-dir private/my-annotation
+    python tools/full_pipeline.py --source tools/examples/source.json --output-dir private/my-annotation --batch-size 30
+    python tools/verify_full.py
 """
 from __future__ import annotations
 
@@ -32,9 +32,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-# Original study notes are local-only and excluded from the repository.
-DEFAULT_SOURCE = ROOT / "private" / "source.md"
-DATA_DIR = ROOT / "data"
+DATA_DIR = ROOT / "app" / "data"
 STATE_PATH = DATA_DIR / "full_annotation_state.json"
 SOURCE_ROWS_PATH = DATA_DIR / "source_rows.json"
 VOCAB_PATH = DATA_DIR / "vocab.json"
@@ -929,7 +927,7 @@ def verify_document(document: dict[str, Any], source: Path) -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source", type=Path, default=DEFAULT_SOURCE)
+    parser.add_argument("--source", type=Path, required=True, help="your local source JSON or supported legacy Markdown")
     parser.add_argument("--output-dir", type=Path, help="write vocabulary and checkpoints to this directory")
     parser.add_argument("--batch-size", type=int, default=25)
     parser.add_argument("--retries", type=int, default=4)
@@ -949,7 +947,7 @@ def main() -> int:
     if not 1 <= args.workers <= 4:
         parser.error("--workers must be 1..4")
     if not args.source.is_file():
-        parser.error("Local source is missing; put it in private/source.md or supply --source")
+        parser.error("The specified local source is missing")
     if args.verify:
         if not VOCAB_PATH.exists():
             raise SystemExit(f"Missing {VOCAB_PATH}")

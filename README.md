@@ -6,14 +6,24 @@ A simple English listening and spelling trainer, bundled with **1533 IELTS liste
 
 The same practice system works with your own CET-4, CET-6 or other English vocabulary. There is no fixed entry count: annotate your list with English, IPA, Chinese meanings and answer rules, then use it in this app. The bundled data is an answer vocabulary collection; speech is synthesized, rather than taken from original exam recordings.
 
+## Folder layout
+
+```text
+README.md / README.zh-CN.md
+app/       Web page, styles, scripts, icon and vocabulary
+tools/     Windows launchers, annotation tools, audits and examples
+```
+
+The original study notes are not included. The structured vocabulary is in `app/data/`; custom-list examples are in `tools/examples/`.
+
 ## Open the page
 
-Keep the downloaded folder together and open `index.html` or double click `打开网页.cmd`. Chrome or Edge is recommended. Daily practice needs no installation, account or API configuration.
+Keep the downloaded folder together and open [`app/index.html`](app/index.html) or double click `tools/打开网页.cmd`. Chrome or Edge is recommended. Daily practice needs no installation, account or API configuration.
 
 | Launcher | Purpose | Requirements |
 | --- | --- | --- |
-| `打开网页.cmd` | Opens the local HTML in the default browser | Browser |
-| `启动本地预览.cmd` | Starts a local server at `http://127.0.0.1:11545/` | Browser, Python 3 |
+| `tools/打开网页.cmd` | Opens the local HTML in the default browser | Browser |
+| `tools/启动本地预览.cmd` | Starts a local server at `http://127.0.0.1:11545/` | Browser, Python 3 |
 
 These are alternative Windows launchers. Keep the server terminal open and press `Ctrl+C` to stop it. On other systems, open HTML directly or run `python tools/preview_server.py`. The page does not automatically refresh.
 
@@ -76,19 +86,19 @@ Each vocabulary has a separate `datasetId` for study records and backups. Backup
 
 ## Use your own vocabulary
 
-`data/vocab.json` is the structured data and `data/vocab.js` is its identical browser copy for direct HTML opening. Replacing a vocabulary requires generating both files together.
+`app/data/vocab.json` is the structured data and `app/data/vocab.js` is its identical browser copy for direct HTML opening. Replacing a vocabulary requires generating both files together.
 
-**Manual annotation:** copy [examples/vocab.json](examples/vocab.json) and fill in complete entries. Export and check in a local directory first; add `--replace` to replace the app's vocabulary after review. Preserve the original vocabulary and export your learning backup first.
+**Manual annotation:** copy [tools/examples/vocab.json](tools/examples/vocab.json) and fill in complete entries. Export and check in a local directory first; add `--replace` to replace the app's vocabulary after review. Preserve the original vocabulary and export your learning backup first.
 
 ```sh
-python tools/build_vocab.py --input examples/vocab.json --output-dir private/my-vocab
+python tools/build_vocab.py --input tools/examples/vocab.json --output-dir private/my-vocab
 python tools/verify_full.py --data private/my-vocab/vocab.json --js private/my-vocab/vocab.js
-python tools/build_vocab.py --input examples/vocab.json --output-dir data --replace
+python tools/build_vocab.py --input tools/examples/vocab.json --output-dir app/data --replace
 ```
 
 Replace the sample input with your annotated JSON. Words, phrases and names need Chinese senses; literal numbers can use an English reading and IPA. `acceptedAnswers` specifies valid answers, while `synonyms` holds separate study suggestions.
 
-**Optional API annotation:** prepare your raw list using [examples/source.json](examples/source.json), then run `tools/full_pipeline.py` to generate IPA, Chinese senses and synonyms. Endpoint, model and key are provided locally at runtime; no provider configuration is bundled, and practice makes no annotation API calls. See the [English tools guide](tools/README.md) / [中文工具说明](tools/README.zh-CN.md) for configuration, thinking parameters and review. Check automated meanings, pronunciation and answer rules before use.
+**Optional API annotation:** prepare your raw list using [tools/examples/source.json](tools/examples/source.json), then run `tools/full_pipeline.py` to generate IPA, Chinese senses and synonyms. Endpoint, model and key are provided locally at runtime; no provider configuration is bundled, and practice makes no annotation API calls. See the [English tools guide](tools/README.md) / [中文工具说明](tools/README.zh-CN.md) for configuration, thinking parameters and review. Check automated meanings, pronunciation and answer rules before use.
 
 The bundled list preserves entries, order, duplicates and stable IDs; its 19 uncategorized entries have been classified. Notes identify estimated proper-name pronunciations and sense-dependent readings.
 
@@ -97,13 +107,13 @@ The bundled list preserves entries, order, duplicates and stable IDs; its 19 unc
 The static HTML/CSS/JavaScript frontend needs no build. Python tools use the standard library and require Python 3.10+. Only browser audits need Node.js, Playwright and the selected browsers:
 
 ```sh
-npm ci
-npm run test:flows
-npm run test:custom
+npm --prefix tools ci
+npm --prefix tools run test:flows
+npm --prefix tools run test:custom
 python tools/verify_full.py
 python tools/check_public.py
 ```
 
-Audits run in isolated headless browsers and write results to the system temporary directory by default. Full-flow audits target the bundled IELTS list; the custom audit uses sample data to verify reuse, grading and record separation.
+Run these commands from the repository root. Audit dependencies and their package files stay in `tools/`. Audits run in isolated headless browsers and write results to the system temporary directory by default. Full-flow audits target the bundled IELTS list; the custom audit uses sample data to verify reuse, grading and record separation.
 
 `.gitignore` allows the app, formal vocabulary, examples, documentation and tools. Original notes, annotation intermediates, logs, reports, backups and actual API configuration are excluded. The publication scanner checks candidates, staged content and Git history, reporting only file names and issue categories. Rerun it after changes and inspect the actual staged files.

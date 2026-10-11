@@ -5,7 +5,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { pathToFileURL } = require('node:url');
 const { chromium, auditLaunch, auditOutput } = require('./playwright_runtime.cjs');
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname, '..', 'app');
 const reportDir = auditOutput(); fs.mkdirSync(reportDir, { recursive: true });
 const base = process.argv.find(arg => arg.startsWith('--url='))?.slice(6) || 'http://127.0.0.1:11545/';
 const data = JSON.parse(fs.readFileSync(path.join(root, 'data/vocab.json'), 'utf8'));

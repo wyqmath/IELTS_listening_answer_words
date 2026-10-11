@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { chromium, auditLaunch, auditOutput } = require('./playwright_runtime.cjs');
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname, '..', 'app');
 const reportDir = auditOutput();
 fs.mkdirSync(reportDir, { recursive: true });
 const headed = process.argv.includes('--headed');
