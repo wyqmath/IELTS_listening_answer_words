@@ -521,6 +521,77 @@ test('synonym-not-answer', '同义提示默认不算听力正确答案', 'P1', [
   await submit(page, item.acceptedAnswers[0]);
 });
 
+test('spelling-differences', '拼写差异显示漏字、多字、替换并保留纠错流程', 'P1', ['输入漏写、多写、替换和错序的字母', '检查差异与刷新状态', '检查空格、可接受别名和安全显示', '拼写正确后继续'], async page => {
+  const shipping = entries.find(x => x.original === 'shipping');
+  const samples = [
+    ['shiping', [['equal', 'ship'], ['add', 'p'], ['equal', 'ing']]],
+    ['shiipping', [['equal', 'shi'], ['remove', 'i'], ['equal', 'pping']]],
+    ['shippong', [['equal', 'shipp'], ['remove', 'o'], ['add', 'i'], ['equal', 'ng']]],
+    ['shippingg', [['equal', 'shipping'], ['remove', 'g']]],
+    ['shippnig', null],
+    ['shpiong', null],
+    ['SHIPING', [['equal', 'ship'], ['add', 'p'], ['equal', 'ing']]],
+    ['<img src=x onerror="window.__diffInjected=true">', null],
+    ['x'.repeat(2000), null]
+  ];
+  async function parts() {
+    return page.locator('.spelling-diff').evaluate(el => [...el.childNodes].map(node => [
+      node.nodeName === 'DEL' ? 'remove' : node.nodeName === 'INS' ? 'add' : 'equal',
+      node.textContent.replace(/␠/g, ' ')
+    ]));
+  }
+  async function checkDiff(source, target, expected) {
+    const actual = await parts();
+    if (expected) invariant(actual, expected, 'The diff marks only the expected changed letters.');
+    invariant(actual.filter(([kind]) => kind !== 'add').map(([, text]) => text).join(''), source,
+      'Removing inserted characters reconstructs the submitted answer.');
+    invariant(actual.filter(([kind]) => kind !== 'remove').map(([, text]) => text).join(''), target,
+      'Removing deleted characters reconstructs the accepted answer.');
+    invariant(await page.locator('#next').isDisabled(), true, 'Showing differences preserves the correction lock.');
+    invariant(await page.locator('.spelling-diff').getAttribute('aria-hidden'), 'true', 'Visual markup is not read twice.');
+    assert.ok((await page.locator('.spelling-comparison .sr-only').textContent()).toLowerCase().includes(source),
+      'Assistive feedback includes the submitted answer.');
+  }
+  for (const [answer, expected] of samples) {
+    await choose(page, shipping); await submit(page, answer);
+    await checkDiff(answer.toLowerCase(), 'shipping', expected);
+    invariant(await page.locator('.spelling-diff img, .spelling-diff script').count(), 0, 'Submitted HTML is escaped.');
+    invariant(await page.evaluate(() => Boolean(window.__diffInjected)), false, 'Submitted code never executes.');
+    const before = await state(page);
+    await page.reload();
+    await checkDiff(answer.toLowerCase(), 'shipping', expected);
+    invariant((await state(page)).history, before.history, 'Reload retains feedback without another scored attempt.');
+    invariant(await page.locator('#result-box .synonym-chip').count(), shipping.synonyms.length, 'Synonyms remain expanded.');
+    for (const meaning of shipping.meanings) assert.ok((await page.locator('#result-box').innerText()).includes(meaning.zh));
+    await submit(page, 'shipping');
+    invariant(await page.locator('.spelling-comparison').count(), 0, 'Completed correction removes error differences.');
+    invariant(await page.locator('#next').isDisabled(), false, 'Correct spelling unlocks navigation.');
+    const after = await state(page);
+    invariant([after.records[shipping.id].correct, after.records[shipping.id].attempts],
+      [before.records[shipping.id].correct, before.records[shipping.id].attempts], 'Correcting does not inflate independent accuracy.');
+  }
+  const numeric = entries.find(x => x.original === '12');
+  for (const [answer, target] of [['twelv', 'twelve'], ['tweleve', 'twelve'], ['13', '12'], ['-12', '12']]) {
+    await choose(page, numeric); await submit(page, answer); await checkDiff(answer, target);
+    assert.ok((await page.locator('.result-answer').innerText()).includes('12'), 'Numeric entries keep the canonical digit heading.');
+    await submit(page, target);
+  }
+  const hyphenated = entries.find(x => x.original === 'anti-freeze');
+  for (const [answer, expected] of [
+    ['antifreeze', [['equal', 'anti'], ['add', ' '], ['equal', 'freeze']]],
+    ['anti--freeze', [['equal', 'anti'], ['remove', '--'], ['add', ' '], ['equal', 'freeze']]]
+  ]) {
+    await choose(page, hyphenated); await submit(page, answer); await checkDiff(answer, 'anti freeze', expected);
+    assert.ok((await page.locator('.spelling-diff').textContent()).includes('␠'), 'Changed spaces are visibly marked.');
+    await submit(page, 'anti freeze');
+  }
+  const variant = entries.find(x => x.original === 'color');
+  await choose(page, variant); await submit(page, 'colou'); await checkDiff('colou', 'colour'); await submit(page, 'colour');
+  invariant((await state(page)).session.result.correct, true, 'British spelling is still accepted.');
+  await choose(page, shipping); await submit(page, ' SHIPPING ');
+  invariant((await state(page)).session.result.correct, true, 'Accepted case and whitespace do not produce a diff.');
+});
+
 test('formal-aliases', '数字、时间、日期和编号的原形式及英文别名', 'P1', ['分别选择 12、7:45、April 9、AF741T', '输入原始形式', '输入所有已标注别名', '输入相近错误答案'], async page => {
   const selections = [['12', '13'], ['7:45', '7:46'], ['April 9', 'April 10'], ['AF741T', 'AF742T']];
   for (const [original, incorrect] of selections) {

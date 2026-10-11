@@ -203,6 +203,66 @@
     if (item.type === 'code') value = value.replace(/\s/g, '');
     return value;
   }
+  function spellingDiff(answer, target) {
+    const source = [...answer], correct = [...target];
+    let prefix = 0, suffix = 0;
+    while (prefix < Math.min(source.length, correct.length) && source[prefix] === correct[prefix]) prefix++;
+    while (suffix < Math.min(source.length, correct.length) - prefix &&
+      source[source.length - suffix - 1] === correct[correct.length - suffix - 1]) suffix++;
+    const from = source.slice(prefix, source.length - suffix), to = correct.slice(prefix, correct.length - suffix);
+    const rows = Array.from({ length: from.length + 1 }, () => new Uint32Array(to.length + 1));
+    for (let i = from.length; i >= 0; i--) {
+      for (let j = to.length; j >= 0; j--) {
+        rows[i][j] = i === from.length ? to.length - j : j === to.length ? from.length - i :
+          Math.min(rows[i + 1][j] + 1, rows[i][j + 1] + 1, rows[i + 1][j + 1] + Number(from[i] !== to[j]));
+      }
+    }
+    const parts = [];
+    function append(kind, text) {
+      if (!text) return;
+      if (parts.at(-1)?.kind === kind) parts.at(-1).text += text;
+      else parts.push({ kind, text });
+    }
+    let i = 0, j = 0, removed = '', added = '';
+    function flushChanges() {
+      append('remove', removed); append('add', added); removed = ''; added = '';
+    }
+    append('equal', source.slice(0, prefix).join(''));
+    while (i < from.length || j < to.length) {
+      if (i < from.length && j < to.length && from[i] === to[j]) {
+        flushChanges(); append('equal', from[i]); i++; j++;
+      } else if (i < from.length && rows[i][j] === rows[i + 1][j] + 1) {
+        removed += from[i++];
+      } else if (j < to.length && rows[i][j] === rows[i][j + 1] + 1) {
+        added += to[j++];
+      } else {
+        removed += from[i++]; added += to[j++];
+      }
+    }
+    flushChanges(); append('equal', source.slice(source.length - suffix).join(''));
+    const unchanged = parts.reduce((count, part) => count + (part.kind === 'equal' ? [...part.text].length : 0), 0);
+    return { distance: rows[0][0], unchanged, parts };
+  }
+  function spellingHtml(item, answer) {
+    // Use grading normalization so accepted case, spacing and hyphens do not appear as errors.
+    const source = normalize(answer, item);
+    let best;
+    for (const accepted of item.acceptedAnswers) {
+      const diff = spellingDiff(source, normalize(accepted, item));
+      if (!best || diff.distance < best.distance || (diff.distance === best.distance &&
+        (diff.unchanged > best.unchanged || (diff.unchanged === best.unchanged && accepted === item.original)))) {
+        best = { ...diff, target: accepted };
+      }
+    }
+    const comparison = best.parts.map(({ kind, text }) => {
+      if (kind === 'equal') return esc(text);
+      const tag = kind === 'remove' ? 'del' : 'ins';
+      // Make changed spaces visible instead of asking the learner to spot an empty underline.
+      const content = esc(text).replace(/ /g, '<span title="空格">␠</span>');
+      return `<${tag} title="${kind === 'remove' ? '删除多余字符' : '补上正确字符'}">${content}</${tag}>`;
+    }).join('');
+    return `<div class="spelling-comparison"><span class="spelling-label">拼写对比：</span><span class="spelling-diff" aria-hidden="true">${comparison}</span><span class="sr-only">你的答案：${esc(answer)}。正确拼写：${esc(best.target)}。</span></div>`;
+  }
   function meaningText(item) {
     if (Array.isArray(item.meanings) && item.meanings.length) {
       return item.meanings.map(entry => `${entry.pos ? entry.pos + ' ' : ''}${entry.zh || ''}`).filter(Boolean).join('；');
@@ -350,7 +410,7 @@
       if (result.removed) note = `已连续答对 ${settings.target} 次，自动移出错题本。`;
       else if (result.correct && !result.correction && record.inMistakes) note = `错题巩固：已连续答对 ${record.streak}/${settings.target} 次。`;
       $('result-box').classList.toggle('wrong', !result.correct);
-      $('result-box').innerHTML = `<div class="result-heading">${result.correct ? (result.correction ? '✓ 纠错完成' : '✓ 正确') : '请拼写正确后继续'}</div><div class="result-answer">${esc(item.original)}<span class="result-ipa">${esc(item.phonetic)}</span></div>${item.english !== item.original ? `<p>英文读法：${esc(item.english)}</p>` : ''}${detailsHtml(item)}${result.correct ? '' : `<p>你的答案：${esc(result.answer)}</p>`}${note ? `<p>${esc(note)}</p>` : ''}`;
+      $('result-box').innerHTML = `<div class="result-heading">${result.correct ? (result.correction ? '✓ 纠错完成' : '✓ 正确') : '请拼写正确后继续'}</div><div class="result-answer">${esc(item.original)}<span class="result-ipa">${esc(item.phonetic)}</span></div>${result.correct ? '' : spellingHtml(item, result.answer)}${item.english !== item.original ? `<p>英文读法：${esc(item.english)}</p>` : ''}${detailsHtml(item)}${note ? `<p>${esc(note)}</p>` : ''}`;
     }
   }
 
