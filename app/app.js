@@ -579,7 +579,7 @@
     const collapsed = settings[immersive ? 'immersiveControlsCollapsed' : 'controlsCollapsed'];
     $('practice-controls').hidden = collapsed;
     document.body.classList.toggle('controls-collapsed', collapsed);
-    $('toggle-controls').textContent = collapsed ? '展开操作 ⌄' : '收起操作 ⌃';
+    $('controls-label').textContent = collapsed ? '展开操作' : '收起操作';
     $('toggle-controls').setAttribute('aria-expanded', String(!collapsed));
   }
   function openSettings() { closeOptions(); stopSpeech(); syncSettings(); $('sound-dialog').showModal(); }

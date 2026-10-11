@@ -7,9 +7,9 @@
   <meta name="description" content="雅思听力答案词、英语拼写与词卡练习，支持自备词库用于四六级等学习。">
   <title>听见 · 听力词卡</title>
   <link rel="icon" type="image/svg+xml" href="app/assets/icon.svg">
-  <link rel="stylesheet" href="app/styles.css?v=20261011-controls">
+  <link rel="stylesheet" href="app/styles.css?v=20261011-focus">
   <script src="app/data/vocab.js" defer></script>
-  <script src="app/app.js?v=20261011-controls" defer></script>
+  <script src="app/app.js?v=20261011-focus" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -31,7 +31,7 @@
     <section id="practice-view" class="view">
       <div class="practice-layout">
         <div class="practice-main">
-          <div class="control-toggle-row"><button class="text-button" id="toggle-controls" type="button" aria-controls="practice-controls" aria-expanded="true">收起操作 ⌃</button></div>
+          <div class="control-toggle-row"><button class="text-button" id="toggle-controls" type="button" aria-controls="practice-controls" aria-expanded="true"><span id="controls-label">收起操作</span><svg class="control-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m4 6 4 4 4-4"/></svg></button></div>
           <div id="practice-controls" class="practice-controls">
           <div class="practice-toolbar">
             <div class="mode-switch" role="group" aria-label="练习方式">
