@@ -73,7 +73,7 @@ Fullscreen shows the exercise, playback, answers and navigation, with expand and
 
 Speech uses browser `SpeechSynthesis`, with **no prerecorded audio**. Settings expose voice, rate, pitch and volume. Advancing to the next entry automatically reads it by default in every mode; you can turn this off. Existing saves receive this default, while later manual opt-outs are preserved. Prefer `en-GB` for a British voice when available.
 
-Rate covers **0.1–10×** using a slider or number input; actual speed depends on the voice. Playback can repeat **1–10 times**, once by default, for play, replay and automatic reading in every mode, with roughly half a second between repeats. Replay starts over. Navigation, mode/view changes, settings/help and backgrounding cancel remaining repeats; Space pauses or resumes.
+Rate covers **0.1–10×**, **1× by default**, using a slider or number input; actual speed depends on the voice. Playback can repeat **1–10 times**, **twice by default**, for play, replay and automatic reading in every mode, with roughly half a second between repeats. Existing saves using the former defaults receive the new defaults; later manual changes are preserved. Replay starts over. Navigation, mode/view changes, settings/help and backgrounding cancel remaining repeats; Space pauses or resumes.
 
 Volume is **0–100%**. Native browser speech cannot amplify beyond 100%; use the system or speaker volume for louder output. Google and other voices, offline support and successful synthesis depend on browser and system. Try another voice/browser if playback fails; confirm audible output on your own device.
 

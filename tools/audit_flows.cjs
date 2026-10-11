@@ -199,13 +199,16 @@ test('full-load', '完整词库加载、首页隐藏总数与全新学习状态'
   invariant(Object.values(s.records).some(r => r.attempts || r.inMistakes || r.marked || r.seen), false, 'No old status is imported.');
   invariant(s.settings.target, 3, 'Default removal threshold is three independent answers.');
   invariant(s.settings.autoSpeak, true, 'Advancing automatically reads the next item by default.');
+  invariant(s.settings.rate, 1, 'The default speech rate is 1x.');
+  invariant(s.settings.repeats, 2, 'Each playback reads twice by default.');
 });
 
 test('default-autoplay', '默认下一条朗读、纠错后朗读及手动关闭', 'P1', ['答对后回车切题', '答错并纠错后点击切题', '关闭自动朗读并刷新'], async page => {
   invariant(await page.evaluate(() => window.__auditSpeech.speak.length), 0, 'Initial load does not play without interaction.');
   await submit(page, (await currentEntry(page)).original);
   await page.keyboard.press('Enter');
-  invariant(await page.evaluate(() => window.__auditSpeech.speak.map(x => x.text)), [entries[1].speakText], 'Enter advances and reads the new answer once.');
+  await finishUtterance(page); await speechCount(page, 2); await finishUtterance(page);
+  invariant(await page.evaluate(() => window.__auditSpeech.speak.map(x => [x.text, x.rate])), Array(2).fill([entries[1].speakText, 1]), 'Enter advances and reads the new answer twice at 1x.');
   await submit(page, 'wrong-default-autoplay');
   await submit(page, (await currentEntry(page)).original);
   await next(page);
@@ -220,12 +223,20 @@ test('default-autoplay', '默认下一条朗读、纠错后朗读及手动关闭
 test('autoplay-upgrade', '旧记录启用新默认并保留学习记录', 'P1', ['写入旧设置与标记', '刷新', '检查自动朗读及学习记录'], async page => {
   const saved = await state(page);
   saved.settings.autoSpeak = false; delete saved.settings.autoSpeakConfigured;
+  saved.settings.rate = .85; saved.settings.repeats = 1; delete saved.settings.playbackDefaultsApplied;
   saved.records[saved.session.ids[0]].marked = true;
   await seedStorage(page, [[key, saved]]);
   invariant((await state(page)).settings.autoSpeak, true, 'The previous false default migrates to automatic reading.');
+  invariant([(await state(page)).settings.rate, (await state(page)).settings.repeats], [1, 2], 'Former playback defaults upgrade to 1x and two readings.');
   invariant((await state(page)).records[entries[0].id].marked, true, 'Migration preserves bookmarks.');
   await next(page);
   invariant(await page.evaluate(() => window.__auditSpeech.speak.at(-1).text), entries[1].speakText, 'The migrated default actually reads on navigation.');
+  await finishUtterance(page); await speechCount(page, 2); await finishUtterance(page);
+  await page.locator('#sound-shortcut').click();
+  await page.locator('#rate-number').fill('0.85'); await page.locator('#rate-number').dispatchEvent('change');
+  await page.locator('#playback-repeat').selectOption('1');
+  await page.locator('#sound-dialog .close-button').click(); await page.reload();
+  invariant([(await state(page)).settings.rate, (await state(page)).settings.repeats], [.85, 1], 'Manually selecting the former values persists after the one-time upgrade.');
 });
 
 test('storage-migration', '无版本号存储键迁移保留记录及纠错状态', 'P1', ['标记并答错', '以旧键保存', '重新加载后纠错并刷新'], async page => {

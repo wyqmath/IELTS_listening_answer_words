@@ -21,10 +21,10 @@
     `vocab-${(identityHash >>> 0).toString(16)}`;
   const storageKey = datasetId === '1533' ? 'tingjian.full' : `tingjian.${datasetId}`;
   const legacyStorageKey = datasetId === '1533' ? 'tingjian.full.v2' : `tingjian.v2.${datasetId}`;
-  const defaults = { voice: '', rate: 0.85, pitch: 1, volume: 1, target: 3, autoSpeak: true,
-    autoSpeakConfigured: false, repeats: 1, hintChinese: false, hintPhonetic: false,
+  const defaults = { voice: '', rate: 1, pitch: 1, volume: 1, target: 3, autoSpeak: true,
+    autoSpeakConfigured: false, repeats: 2, playbackDefaultsApplied: true, hintChinese: false, hintPhonetic: false,
     controlsCollapsed: false, immersiveControlsCollapsed: true };
-  function readSettings(value, base = defaults) {
+  function readSettings(value, base = defaults, upgradePlaybackDefaults = false) {
     const s = value && typeof value === 'object' ? value : {}, next = { ...base };
     if (typeof s.voice === 'string') next.voice = s.voice;
     for (const [name, min, max] of [['rate', .1, 10], ['pitch', .5, 1.5], ['volume', 0, 1]]) {
@@ -32,6 +32,11 @@
     }
     if ([1, 2, 3, 4, 5, 10].includes(s.target)) next.target = s.target;
     if (Number.isInteger(s.repeats)) next.repeats = Math.max(1, Math.min(10, s.repeats));
+    // Upgrade former defaults once; later edits and imported settings remain explicit.
+    if (upgradePlaybackDefaults && s.playbackDefaultsApplied !== true) {
+      if (s.rate === .85) next.rate = defaults.rate;
+      if (s.repeats === 1) next.repeats = defaults.repeats;
+    }
     for (const name of ['hintChinese', 'hintPhonetic', 'controlsCollapsed', 'immersiveControlsCollapsed']) {
       if (typeof s[name] === 'boolean') next[name] = s[name];
     }
@@ -50,7 +55,7 @@
     const saved = JSON.parse(stored ?? legacyStored ?? 'null');
     if (saved && typeof saved === 'object') {
       legacyStoragePending = stored === null && legacyStored !== null;
-      settings = readSettings(saved.settings);
+      settings = readSettings(saved.settings, defaults, true);
       savedSession = saved.session;
       for (const item of entries) {
         const r = saved.records?.[item.id];
