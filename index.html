@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1c594c">
+  <meta name="description" content="雅思听力答案词、英语拼写与词卡练习，支持自备词库用于四六级等学习。">
+  <title>听见 · 听力词卡</title>
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+  <link rel="stylesheet" href="styles.css?v=20261011-public">
+  <script src="data/vocab.js" defer></script>
+  <script src="app.js?v=20261011-public" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="#" class="brand" id="home-link" aria-label="听见，返回练习">
+        <img src="assets/icon.svg" width="38" height="38" alt="">
+        <span>听见</span>
+      </a>
+      <div class="header-actions"><button class="button quiet" id="open-fullscreen" type="button" title="进入沉浸式全屏">全屏 <span aria-hidden="true">⛶</span></button><button class="button quiet" id="open-sound" type="button">设置</button></div>
+    </div>
+  </header>
+  <main class="shell">
+    <nav class="main-nav" aria-label="主要功能">
+      <button class="nav-button active" data-view="practice" aria-current="page">练习</button>
+      <button class="nav-button" data-view="library">词库</button>
+      <button class="nav-button" data-view="mistakes">错题本 <span class="nav-count" id="mistake-count" hidden></span></button>
+      <button class="nav-button" data-view="stats">统计</button>
+    </nav>
+    <section id="practice-view" class="view">
+      <div class="practice-layout">
+        <div class="practice-main">
+          <div class="practice-toolbar">
+            <div class="mode-switch" role="group" aria-label="练习方式">
+              <button class="mode-button active" data-mode="listen" aria-pressed="true" title="听音写答案">听音</button>
+              <button class="mode-button" data-mode="chinese" aria-pressed="false" title="看中文写英文">中文</button>
+              <button class="mode-button" data-mode="phonetic" aria-pressed="false" title="看音标写英文">音标</button>
+              <button class="mode-button" data-mode="flashcard" aria-pressed="false">词卡</button>
+            </div>
+            <details class="practice-options" id="practice-options">
+              <summary><span id="range-label">范围</span> <span aria-hidden="true">⌄</span></summary>
+              <aside class="practice-sidebar">
+                <label class="field-label" for="pool-select">词条范围</label><select id="pool-select"><option value="all">全部词条</option><option value="mistakes">错题本</option><option value="marked">已标记</option><option value="unseen">尚未练习</option></select>
+                <label class="field-label" for="category-select">分类</label><select id="category-select"><option value="all">所有分类</option></select>
+                <button class="button outlined full-width" id="shuffle" title="重新随机排列本轮词条" type="button">打乱顺序</button>
+              </aside>
+            </details>
+          </div>
+          <article class="study-card" id="study-card">
+            <div class="card-top"><span class="card-category" id="card-category">常规</span><span class="card-position" id="card-position">第 01 条</span></div>
+            <div class="exercise-toolbar" role="group" aria-label="练习操作">
+              <button class="text-button" id="bookmark" type="button" aria-pressed="false">☆ 标记</button>
+              <button class="text-button" id="toggle-mistake" type="button">＋ 加入错题</button>
+              <button class="text-button" id="previous" type="button">← 上一条</button>
+              <button class="text-button" id="sound-shortcut" type="button">声音与练习设置</button>
+              <button class="text-button" id="open-help" type="button">快捷键与判分</button>
+            </div>
+            <div class="hint-controls" role="group" aria-label="组合练习提示">
+              <div class="hint-buttons"><button class="text-button" id="hint-chinese" type="button" aria-pressed="false">中文提示</button><button class="text-button" id="hint-phonetic" type="button" aria-pressed="false">音标提示</button></div>
+              <div class="hint-defaults"><label><input type="checkbox" id="default-chinese">默认中文</label><label><input type="checkbox" id="default-phonetic">默认音标</label></div>
+            </div>
+            <div id="exercise-area">
+              <div class="prompt-area" id="prompt-area"></div>
+              <div class="question-hints" id="question-hints" hidden></div>
+              <div class="speech-status" id="speech-status" role="status" aria-live="polite"></div>
+              <div class="auxiliary-controls"><button class="text-button" id="replay" type="button" aria-keyshortcuts="Alt+R R" title="朗读当前词条（Alt+R）">朗读</button></div>
+              <form id="answer-form" autocomplete="off"><label class="sr-only" for="answer-input">填写答案</label><div class="answer-row"><input id="answer-input" placeholder="输入英文答案…" spellcheck="false" autocapitalize="none" autocomplete="off"><button class="button primary" id="check-answer" type="submit" aria-keyshortcuts="Enter">提交 ↵</button></div></form>
+              <div class="flashcard-actions" id="flashcard-actions" hidden><button class="button outlined" id="flip-card" type="button">翻开词卡</button></div>
+              <p class="enter-help" id="enter-help"><kbd>Enter</kbd> 空白时播放，填好后提交</p>
+              <div id="result-box" class="result-box" role="status" aria-live="polite" hidden></div>
+              <div class="card-bottom"><button class="button outlined" id="next" type="button">下一条 →</button></div>
+            </div>
+            <div id="empty-practice" class="empty-state" hidden><div class="empty-symbol">✓</div><h2 id="empty-title">这里暂时没有词条</h2><p id="empty-description">换一个范围，继续练习。</p><button class="button primary" id="return-all" type="button">练习全部词条</button></div>
+          </article>
+        </div>
+      </div>
+    </section>
+    <section id="library-view" class="view" hidden><div class="section-heading"><h2>词库</h2><label class="search-field"><span aria-hidden="true">⌕</span><input id="library-search" placeholder="搜索英文、中文或数字…" aria-label="搜索词库"></label></div><div class="library-filters"><label for="library-category">分类</label><select id="library-category"><option value="all">所有分类</option></select></div><div class="word-list" id="library-list"></div><div id="library-pager" class="list-pager"></div></section>
+    <section id="mistakes-view" class="view" hidden><div class="section-heading"><div><h2>错题本</h2><p id="mistake-description">连续答对 3 次自动移出，也可以手动移除。</p></div><div class="button-group"><button class="button outlined" id="clear-mistakes" type="button">一键清空</button><button class="button primary" id="practice-mistakes" type="button">练习错题 →</button></div></div><div class="word-list" id="mistake-list"></div><div id="mistakes-pager" class="list-pager"></div></section>
+    <section id="stats-view" class="view" hidden><div class="section-heading"><h2>统计</h2><div class="button-group"><button class="button outlined" id="export-progress" type="button">导出学习记录</button><button class="button outlined" id="import-progress" type="button">导入备份</button><input id="import-file" type="file" accept="application/json" hidden><button class="button quiet" id="reset-progress" type="button">重置记录</button></div></div><div class="stats-filters"><label>模式<select id="stats-mode-filter"><option value="all">全部模式</option><option value="listen">听音写答案</option><option value="chinese">看中文</option><option value="phonetic">看音标</option><option value="flashcard">词卡</option></select></label><label>分类<select id="stats-category-filter"><option value="all">全部分类</option></select></label><label>日期<input id="stats-date-filter" type="date"></label><button class="button quiet" id="clear-stats-filter" type="button">清除筛选</button></div><div class="stats-grid" id="stats-grid"></div><section class="side-panel chart-panel"><div class="chart-heading"><div><h3>正确率趋势</h3><p>无数据日期保持为空；可切换时间范围。</p></div><div class="chart-range" role="group" aria-label="图表时间范围"><button type="button" data-range="7">7 天</button><button type="button" data-range="30" class="active">30 天</button><button type="button" data-range="all">全部</button></div></div><div class="chart-wrap"><svg id="accuracy-chart" role="img" aria-label="正确率随时间变化的折线图" viewBox="0 0 800 250" preserveAspectRatio="none"></svg><div id="chart-empty" class="chart-empty" hidden>练习几天后，这里会出现正确率曲线。</div></div><p id="chart-summary" class="chart-summary" aria-live="polite"></p></section><div class="stats-panels"><section class="side-panel"><h3>每日练习</h3><div class="daily-table-wrap"><table class="daily-table"><thead><tr><th>日期</th><th>答题</th><th>正确</th><th>错误</th><th>正确率</th><th>纠错</th><th>翻卡</th><th>时长</th><th>词条</th></tr></thead><tbody id="daily-stats"></tbody></table></div></section><section class="side-panel"><h3>分类表现</h3><div id="category-stats"></div><h3 class="recent-heading">最近作答</h3><div id="recent-history"></div></section></div></section>
+  </main>
+  <p id="save-status" class="save-warning" role="status" hidden></p>
+  <dialog id="sound-dialog" class="settings-dialog">
+    <form method="dialog" class="dialog-header"><h2>声音与练习设置</h2><button class="close-button" aria-label="关闭设置" type="submit">×</button></form>
+    <div class="dialog-content">
+      <label class="field-label" for="voice-select">朗读声音</label><select id="voice-select"><option value="">正在读取…</option></select>
+      <p class="settings-hint" id="voice-note">可选声音由当前浏览器和系统提供。</p>
+      <label class="slider-label" for="rate">语速 <output id="rate-value">0.85×</output></label><div class="rate-controls"><input id="rate" type="range" min="0.1" max="10" step="0.05"><input id="rate-number" type="number" min="0.1" max="10" step="0.05" inputmode="decimal" aria-label="语速倍数"></div>
+      <p class="settings-hint">0.1–10 倍，可直接输入倍数；实际语速范围取决于所选音色。</p>
+      <label class="slider-label" for="pitch">音高 <output id="pitch-value">1.0</output></label><input id="pitch" type="range" min="0.5" max="1.5" step="0.1">
+      <label class="slider-label" for="volume">音量 <output id="volume-value">100%</output></label><input id="volume" type="range" min="0" max="1" step="0.05">
+      <p class="settings-hint">浏览器朗读最高为 100%；需要更响时请调整系统或扬声器音量。</p>
+      <button id="test-voice" class="button outlined full-width" type="button">试听当前声音</button><div id="settings-speech-status" class="speech-status" role="status" aria-live="polite"></div>
+      <hr>
+      <label class="field-label" for="playback-repeat">每次播放几遍？</label><select id="playback-repeat"><option value="1">1 遍（默认）</option><option value="2">2 遍</option><option value="3">3 遍</option><option value="4">4 遍</option><option value="5">5 遍</option><option value="6">6 遍</option><option value="7">7 遍</option><option value="8">8 遍</option><option value="9">9 遍</option><option value="10">10 遍</option></select>
+      <p class="settings-hint">播放、重听和自动朗读都按此次数，遍与遍之间短暂停顿。</p>
+      <label class="checkbox-row"><input type="checkbox" id="auto-speak">下一条自动朗读（所有模式）</label>
+      <label class="field-label" for="mistake-target">错题连续答对几次后移出？</label><select id="mistake-target"><option value="1">1 次</option><option value="2">2 次</option><option value="3">3 次（默认）</option><option value="4">4 次</option><option value="5">5 次</option><option value="10">10 次</option></select>
+      <p class="settings-hint">新规则从下一次作答开始生效；改为较小次数不会立即清空已有错题。</p>
+    </div>
+  </dialog>
+  <dialog id="help-dialog" class="settings-dialog">
+    <form method="dialog" class="dialog-header"><h2>快捷键与判分</h2><button class="close-button" aria-label="关闭帮助" type="submit">×</button></form>
+    <div class="practice-help"><p><kbd>Enter</kbd> 答案空白时播放，填好后提交；答对或纠错完成后进入下一条。词卡中按回车朗读。</p><p><kbd>Alt+R</kbd> 随时重听；输入框外也可按 <kbd>R</kbd>。</p><p><kbd>Space</kbd> 在输入框外播放、暂停或继续；<kbd>Esc</kbd> 关闭弹窗、收起范围或退出全屏。</p><p>按钮聚焦时，回车执行该按钮的操作；输入法选字时不提交答案。</p><p id="input-help">冠词、单复数和时态要准确；大小写不影响判分。</p><p>纠错和翻卡不计独立答题正确率；同义替换是学习提示，不自动作为本题答案。</p></div>
+  </dialog>
+  <dialog id="confirm-dialog" class="confirm-dialog"><h2 id="confirm-title"></h2><p id="confirm-text"></p><div class="button-group"><button class="button outlined" id="cancel-confirm" type="button">取消</button><button class="button primary" id="accept-confirm" type="button">确认</button></div></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

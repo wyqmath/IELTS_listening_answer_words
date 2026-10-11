@@ -1,0 +1,17 @@
+{
+  "name": "tingjian-listening-practice",
+  "version": "1.0.0",
+  "private": true,
+  "description": "IELTS listening answer vocabulary and reusable English listening, spelling and flashcard practice",
+  "license": "MIT",
+  "scripts": {
+    "test:flows": "node tools/audit_flows.cjs",
+    "test:custom": "node tools/audit_custom.cjs",
+    "test:visual": "node tools/audit_visual.cjs",
+    "test:speech": "node tools/audit_speech.cjs",
+    "test:browser": "node tools/verify_browser.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

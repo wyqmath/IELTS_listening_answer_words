@@ -1,0 +1,46 @@
+{
+  "version": 3,
+  "datasetId": "example-vocabulary-v1",
+  "count": 3,
+  "items": [
+    {
+      "id": "demo-word",
+      "original": "battery",
+      "english": "battery",
+      "phonetic": "/ˈbætəri/",
+      "meanings": [{"pos": "n.", "zh": "电池"}],
+      "category": "日常词汇",
+      "type": "word",
+      "acceptedAnswers": ["battery"],
+      "synonyms": [],
+      "speakText": "battery",
+      "pronunciationNote": ""
+    },
+    {
+      "id": "demo-phrase",
+      "original": "in advance",
+      "english": "in advance",
+      "phonetic": "/ɪn ədˈvɑːns/",
+      "meanings": [{"pos": "adv.", "zh": "提前；预先"}],
+      "category": "常用短语",
+      "type": "phrase",
+      "acceptedAnswers": ["in advance"],
+      "synonyms": [{"english": "beforehand", "chinese": "事先", "meaningIndex": 0, "sense": "提前；预先", "note": "常用于准备或安排已在某事之前完成的语境。"}],
+      "speakText": "in advance",
+      "pronunciationNote": ""
+    },
+    {
+      "id": "demo-number",
+      "original": "12",
+      "english": "twelve",
+      "phonetic": "/twelv/",
+      "meanings": [],
+      "category": "数值",
+      "type": "number",
+      "acceptedAnswers": ["12", "twelve"],
+      "synonyms": [],
+      "speakText": "twelve",
+      "pronunciationNote": ""
+    }
+  ]
+}

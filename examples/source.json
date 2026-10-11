@@ -1,0 +1,7 @@
+{
+  "items": [
+    {"id": "demo-word", "original": "battery", "category": "日常词汇", "type": "word", "sourceMeaning": "电池"},
+    {"id": "demo-phrase", "original": "in advance", "category": "常用短语", "type": "phrase", "sourceMeaning": "提前；预先"},
+    {"id": "demo-number", "original": "12", "category": "数值", "type": "number"}
+  ]
+}
