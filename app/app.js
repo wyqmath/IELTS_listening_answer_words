@@ -21,11 +21,12 @@
     `vocab-${(identityHash >>> 0).toString(16)}`;
   const storageKey = datasetId === '1533' ? 'tingjian.full' : `tingjian.${datasetId}`;
   const legacyStorageKey = datasetId === '1533' ? 'tingjian.full.v2' : `tingjian.v2.${datasetId}`;
-  const defaults = { voice: '', rate: 1, pitch: 1, volume: 1, target: 3, autoSpeak: true,
+  const defaults = { theme: 'contrast', voice: '', rate: 1, pitch: 1, volume: 1, target: 3, autoSpeak: true,
     autoSpeakConfigured: false, repeats: 2, playbackDefaultsApplied: true, hintChinese: false, hintPhonetic: false,
     controlsCollapsed: false, immersiveControlsCollapsed: true };
   function readSettings(value, base = defaults, upgradePlaybackDefaults = false) {
     const s = value && typeof value === 'object' ? value : {}, next = { ...base };
+    if (['contrast', 'paper', 'dark'].includes(s.theme)) next.theme = s.theme;
     if (typeof s.voice === 'string') next.voice = s.voice;
     for (const [name, min, max] of [['rate', .1, 10], ['pitch', .5, 1.5], ['volume', 0, 1]]) {
       if (Number.isFinite(s[name])) next[name] = Math.min(max, Math.max(min, s[name]));
@@ -562,7 +563,12 @@
     $('voice-select').value = selectedVoice() ? settings.voice : 'browser-default';
     $('voice-note').textContent = voices.length ? `找到 ${voices.length} 个浏览器声音。en-GB 为英式口音；部分声音需要联网。可调整语速、音高和音量。` : '暂未读取到浏览器音色，请稍后再打开设置；仍可尝试默认英语声音。';
   }
+  function applyTheme() {
+    document.documentElement.dataset.theme = settings.theme;
+    document.querySelector('meta[name="theme-color"]').content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+  }
   function syncSettings() {
+    applyTheme(); $('theme-select').value = settings.theme;
     for (const field of ['rate', 'pitch', 'volume']) $(field).value = settings[field];
     $('rate-value').textContent = settings.rate.toFixed(2) + '×';
     $('pitch-value').textContent = settings.pitch.toFixed(1);
@@ -727,6 +733,9 @@
   for (const id of ['stats-mode-filter', 'stats-category-filter', 'stats-date-filter']) $(id).addEventListener('change', renderStats);
   $('clear-stats-filter').addEventListener('click', () => { $('stats-mode-filter').value = 'all'; $('stats-category-filter').value = 'all'; $('stats-date-filter').value = ''; renderStats(); });
   for (const id of ['open-sound', 'sound-shortcut']) $(id).addEventListener('click', openSettings);
+  $('theme-select').addEventListener('change', () => {
+    settings.theme = $('theme-select').value; applyTheme(); save();
+  });
   for (const field of ['rate', 'pitch', 'volume']) $(field).addEventListener('input', () => {
     stopSpeech(); settings[field] = Number($(field).value); save(); syncSettings();
   });

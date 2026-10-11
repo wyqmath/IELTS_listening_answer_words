@@ -30,6 +30,8 @@ These are alternative Windows launchers. Keep the server terminal open and press
 
 File and HTTP pages have separate browser storage. Export a study backup before changing browser, path, port or opening method.
 
+The default appearance is black text on white, with Arial and system sans-serif fonts. Settings offer white, warm paper and dark palettes, applied to every view and fullscreen. Your choice is saved with your study settings and included in backups.
+
 ## My practice method
 
 | Mode | Practice |

@@ -201,6 +201,36 @@ test('full-load', '完整词库加载、首页隐藏总数与全新学习状态'
   invariant(s.settings.autoSpeak, true, 'Advancing automatically reads the next item by default.');
   invariant(s.settings.rate, 1, 'The default speech rate is 1x.');
   invariant(s.settings.repeats, 2, 'Each playback reads twice by default.');
+  invariant(s.settings.theme, 'contrast', 'White background and dark text is the default appearance.');
+});
+
+test('appearance-settings', '配色切换、纠错状态、全屏及备份恢复', 'P1', ['默认白底黑字', '答错后切配色并刷新', '全屏保留配色', '导出并恢复配色'], async page => {
+  invariant(await page.locator('body').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(255, 255, 255)', 'The default page is white.');
+  await mode(page, 'chinese');
+  assert.match(await page.locator('.prompt-main').evaluate(el => getComputedStyle(el).fontFamily), /^Arial,/, 'Prompts use a sans-serif font.');
+  await submit(page, 'appearance-wrong');
+  const saved = await state(page);
+  for (const theme of ['paper', 'dark']) {
+    await page.locator('#sound-shortcut').click(); await page.locator('#theme-select').selectOption(theme);
+    invariant(await page.locator('html').getAttribute('data-theme'), theme, 'Palette updates immediately.');
+    await page.locator('#sound-dialog .close-button').click(); await page.reload();
+    invariant((await state(page)).settings.theme, theme, 'Palette survives reload.');
+    invariant((await state(page)).records, saved.records, 'Changing appearance preserves study records.');
+    invariant((await state(page)).history, saved.history, 'Changing appearance preserves answer history.');
+    invariant(await page.locator('#next').isDisabled(), true, 'Changing appearance preserves correction lock.');
+  }
+  await page.locator('#open-fullscreen').click();
+  invariant(await page.locator('body').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(22, 24, 28)', 'Fullscreen uses the chosen dark background.');
+  await page.locator('#open-fullscreen').click(); await page.waitForFunction(() => !document.body.classList.contains('immersive'));
+  await submit(page, (await currentEntry(page)).original); await view(page, 'stats');
+  const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export-progress').click()]);
+  const backup = JSON.parse(fs.readFileSync(await download.path(), 'utf8'));
+  invariant(backup.settings.theme, 'dark', 'Study backup includes the appearance choice.');
+  await page.locator('#open-sound').click(); await page.locator('#theme-select').selectOption('contrast');
+  await page.locator('#sound-dialog .close-button').click();
+  await importBackup(page, backup);
+  invariant(await page.locator('html').getAttribute('data-theme'), 'dark', 'Import restores the palette immediately.');
+  invariant((await state(page)).settings.theme, 'dark', 'Imported appearance is saved.');
 });
 
 test('default-autoplay', '默认下一条朗读、纠错后朗读及手动关闭', 'P1', ['答对后回车切题', '答错并纠错后点击切题', '关闭自动朗读并刷新'], async page => {
