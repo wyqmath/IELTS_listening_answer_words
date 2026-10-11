@@ -49,7 +49,8 @@ Numeric entries display the original number and accept listed English readings: 
 
 ## Mistakes and correction
 
-- A wrong answer enters the mistake book. Correct spelling is required before continuing; unfinished correction survives reload.
+- A wrong answer enters the mistake book and clears the input. Failed corrections also clear the input and retain the spelling comparison. Correct spelling is required before continuing; unfinished correction survives reload with an empty input.
+- Successful correction automatically reads the current entry **once**, regardless of the repetition count or next-entry automatic reading setting.
 - Spelling feedback shows extra letters in red with a strikethrough and missing or corrected letters in green with an underline. Digits and English readings are compared with the closest accepted answer.
 - Independent answers count toward accuracy. Correction attempts do not increase accuracy or the correct-answer streak.
 - An entry leaves the mistake book after **3** later independent correct answers in a row by default. Another independent mistake resets the streak.

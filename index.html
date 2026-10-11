@@ -55,7 +55,7 @@
               <button class="text-button" id="bookmark" type="button" aria-pressed="false">☆ 标记</button>
               <button class="text-button" id="toggle-mistake" type="button">＋ 加入错题</button>
               <button class="text-button" id="previous" type="button">← 上一条</button>
-              <button class="text-button" id="sound-shortcut" type="button">声音与练习设置</button>
+              <button class="text-button" id="sound-shortcut" type="button">设置</button>
               <button class="text-button" id="open-help" type="button">快捷键与判分</button>
             </div>
             <div class="hint-controls" role="group" aria-label="组合练习提示">
@@ -87,28 +87,30 @@
   </main>
   <p id="save-status" class="save-warning" role="status" hidden></p>
   <dialog id="sound-dialog" class="settings-dialog">
-    <form method="dialog" class="dialog-header"><h2>声音与练习设置</h2><button class="close-button" aria-label="关闭设置" type="submit">×</button></form>
-    <div class="dialog-content">
-      <label class="field-label" for="theme-select">页面配色</label><select id="theme-select"><option value="contrast">白底黑字（默认）</option><option value="paper">米白底深色字</option><option value="dark">深色底浅色字</option></select>
-      <label class="field-label" for="voice-select">朗读声音</label><select id="voice-select"><option value="">正在读取…</option></select>
-      <p class="settings-hint" id="voice-note">可选声音由当前浏览器和系统提供。</p>
-      <label class="slider-label" for="rate">语速 <output id="rate-value">1.00×</output></label><div class="rate-controls"><input id="rate" type="range" min="0.1" max="10" step="0.05" value="1"><input id="rate-number" type="number" min="0.1" max="10" step="0.05" value="1" inputmode="decimal" aria-label="语速倍数"></div>
-      <p class="settings-hint">0.1–10 倍，可直接输入倍数；实际语速范围取决于所选音色。</p>
-      <label class="slider-label" for="pitch">音高 <output id="pitch-value">1.0</output></label><input id="pitch" type="range" min="0.5" max="1.5" step="0.1">
-      <label class="slider-label" for="volume">音量 <output id="volume-value">100%</output></label><input id="volume" type="range" min="0" max="1" step="0.05">
-      <p class="settings-hint">浏览器朗读最高为 100%；需要更响时请调整系统或扬声器音量。</p>
-      <button id="test-voice" class="button outlined full-width" type="button">试听当前声音</button><div id="settings-speech-status" class="speech-status" role="status" aria-live="polite"></div>
-      <hr>
-      <label class="field-label" for="playback-repeat">每次播放几遍？</label><select id="playback-repeat"><option value="1">1 遍</option><option value="2" selected>2 遍（默认）</option><option value="3">3 遍</option><option value="4">4 遍</option><option value="5">5 遍</option><option value="6">6 遍</option><option value="7">7 遍</option><option value="8">8 遍</option><option value="9">9 遍</option><option value="10">10 遍</option></select>
-      <p class="settings-hint">播放、重听和自动朗读都按此次数，遍与遍之间短暂停顿。</p>
-      <label class="checkbox-row"><input type="checkbox" id="auto-speak" checked>下一条自动朗读（所有模式）</label>
-      <label class="field-label" for="mistake-target">错题连续答对几次后移出？</label><select id="mistake-target"><option value="1">1 次</option><option value="2">2 次</option><option value="3">3 次（默认）</option><option value="4">4 次</option><option value="5">5 次</option><option value="10">10 次</option></select>
-      <p class="settings-hint">新规则从下一次作答开始生效；改为较小次数不会立即清空已有错题。</p>
+    <div class="dialog-scroll">
+      <form method="dialog" class="dialog-header"><h2>设置</h2><button class="close-button" aria-label="关闭设置" type="submit">×</button></form>
+      <div class="dialog-content">
+        <label class="field-label" for="theme-select">页面配色</label><select id="theme-select"><option value="contrast">白底黑字（默认）</option><option value="paper">米白底深色字</option><option value="dark">深色底浅色字</option></select>
+        <label class="field-label" for="voice-select">朗读声音</label><select id="voice-select"><option value="">正在读取…</option></select>
+        <p class="settings-hint" id="voice-note">可选声音由当前浏览器和系统提供。</p>
+        <label class="slider-label" for="rate">语速 <output id="rate-value">1.00×</output></label><div class="rate-controls"><input id="rate" type="range" min="0.1" max="10" step="0.05" value="1"><input id="rate-number" type="number" min="0.1" max="10" step="0.05" value="1" inputmode="decimal" aria-label="语速倍数"></div>
+        <p class="settings-hint">0.1–10 倍，可直接输入倍数；实际语速范围取决于所选音色。</p>
+        <label class="slider-label" for="pitch">音高 <output id="pitch-value">1.0</output></label><input id="pitch" type="range" min="0.5" max="1.5" step="0.1">
+        <label class="slider-label" for="volume">音量 <output id="volume-value">100%</output></label><input id="volume" type="range" min="0" max="1" step="0.05">
+        <button id="test-voice" class="button outlined full-width" type="button">试听当前声音</button><div id="settings-speech-status" class="speech-status" role="status" aria-live="polite"></div>
+        <hr>
+        <label class="field-label" for="playback-repeat">每次播放几遍？</label><select id="playback-repeat"><option value="1">1 遍</option><option value="2" selected>2 遍（默认）</option><option value="3">3 遍</option><option value="4">4 遍</option><option value="5">5 遍</option><option value="6">6 遍</option><option value="7">7 遍</option><option value="8">8 遍</option><option value="9">9 遍</option><option value="10">10 遍</option></select>
+        <label class="checkbox-row"><input type="checkbox" id="auto-speak" checked>下一条自动朗读（所有模式）</label>
+        <label class="field-label" for="mistake-target">错题连续答对几次后移出？</label><select id="mistake-target"><option value="1">1 次</option><option value="2">2 次</option><option value="3">3 次（默认）</option><option value="4">4 次</option><option value="5">5 次</option><option value="10">10 次</option></select>
+        <p class="settings-hint">新规则从下一次作答开始生效；改为较小次数不会立即清空已有错题。</p>
+      </div>
     </div>
   </dialog>
   <dialog id="help-dialog" class="settings-dialog">
-    <form method="dialog" class="dialog-header"><h2>快捷键与判分</h2><button class="close-button" aria-label="关闭帮助" type="submit">×</button></form>
-    <div class="practice-help"><p><kbd>Enter</kbd> 答案空白时播放，填好后提交；答对或纠错完成后进入下一条并默认朗读。词卡中按回车朗读。</p><p><kbd>Alt+R</kbd> 随时重听；输入框外也可按 <kbd>R</kbd>。</p><p><kbd>Space</kbd> 在输入框外播放、暂停或继续；<kbd>Esc</kbd> 关闭弹窗、收起范围或退出全屏。</p><p>按钮聚焦时，回车执行该按钮的操作；输入法选字时不提交答案。</p><p id="input-help">冠词、单复数和时态要准确；大小写不影响判分。</p><p>纠错和翻卡不计独立答题正确率。</p></div>
+    <div class="dialog-scroll">
+      <form method="dialog" class="dialog-header"><h2>快捷键与判分</h2><button class="close-button" aria-label="关闭帮助" type="submit">×</button></form>
+      <div class="practice-help"><p><kbd>Enter</kbd> 答案空白时播放，填好后提交；答对或纠错完成后进入下一条并默认朗读。词卡中按回车朗读。</p><p><kbd>Alt+R</kbd> 随时重听；输入框外也可按 <kbd>R</kbd>。</p><p><kbd>Space</kbd> 在输入框外播放、暂停或继续；<kbd>Esc</kbd> 关闭弹窗、收起范围或退出全屏。</p><p>按钮聚焦时，回车执行该按钮的操作；输入法选字时不提交答案。</p><p id="input-help">冠词、单复数和时态要准确；大小写不影响判分。</p><p>答错后清空输入，需重新拼写正确；纠错成功后会再朗读 1 遍。纠错和翻卡不计独立答题正确率。</p></div>
+    </div>
   </dialog>
   <dialog id="confirm-dialog" class="confirm-dialog"><h2 id="confirm-title"></h2><p id="confirm-text"></p><div class="button-group"><button class="button outlined" id="cancel-confirm" type="button">取消</button><button class="button primary" id="accept-confirm" type="button">确认</button></div></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>

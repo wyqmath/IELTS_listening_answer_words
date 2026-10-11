@@ -20,7 +20,7 @@ if (args.includes('--headed')) throw new Error('Visible browser testing is disab
 const headed = false;
 const controlledSpeechCases = new Set(['keyboard-controls', 'space-play-focus', 'enter-context', 'flashcard-enter',
   'repeat-playback', 'repeat-pause', 'repeat-cancellation', 'repeat-error', 'auto-all-modes', 'fullscreen-combined-hints',
-  'default-autoplay', 'autoplay-upgrade', 'foldable-controls', 'category-all-modes']);
+  'default-autoplay', 'autoplay-upgrade', 'foldable-controls', 'category-all-modes', 'correction-replay']);
 const explicitUrl = args.find(x => x.startsWith('--url='))?.slice(6);
 const only = args.find(x => x.startsWith('--only='))?.slice(7)?.split(',');
 const transportOption = args.find(x => x.startsWith('--transport='))?.slice(12);
@@ -384,6 +384,8 @@ test('refresh-lock', '刷新后保留当前纠错锁', 'P1', ['答错', '刷新�
   await page.reload(); await page.locator('#answer-input').waitFor({ state: 'visible' });
   invariant(await currentId(page), item.id, 'Refresh retains the exact locked item.');
   invariant(await page.locator('#next').isDisabled(), true, 'Refresh cannot bypass the lock.');
+  invariant(await page.locator('#answer-input').inputValue(), '', 'Restored correction starts with an empty input.');
+  assert.match(await page.locator('.spelling-comparison .sr-only').textContent(), /incorrect-before-refresh/, 'Reload preserves the failed answer in the spelling feedback.');
   invariant((await state(page)).records[item.id].wrong, 1, 'Refresh does not double-count the wrong answer.');
   await submit(page, item.acceptedAnswers[0]);
   invariant((await state(page)).records[item.id].correct, 0, 'Restored correction is not scored as an independent answer.');
@@ -391,9 +393,13 @@ test('refresh-lock', '刷新后保留当前纠错锁', 'P1', ['答错', '刷新�
 
 test('correction-counts', '多次纠错不影响独立正确率和连续次数', 'P1', ['独立答错一次', '纠错再错两次', '正确纠错', '检查记录和统计'], async page => {
   const item = await oneMarked(page);
-  await submit(page, 'audit-wrong-1');
-  await submit(page, 'audit-wrong-2');
-  await submit(page, 'audit-wrong-3');
+  for (const answer of ['audit-wrong-1', 'audit-wrong-2', 'audit-wrong-3']) {
+    await submit(page, answer);
+    invariant(await page.locator('#answer-input').inputValue(), '', 'Every wrong submission clears the input.');
+    invariant(await page.locator('#answer-input').evaluate(el => el === document.activeElement), true, 'Failed correction returns focus to the input.');
+    invariant(await page.locator('#next').isDisabled(), true, 'Clearing input preserves the correction lock.');
+    invariant((await state(page)).session.result.answer, answer, 'The latest failed spelling remains available for feedback.');
+  }
   await submit(page, item.acceptedAnswers[0]);
   const s = await state(page), r = s.records[item.id];
   invariant([r.attempts, r.correct, r.wrong, r.streak, r.corrections, r.inMistakes], [1, 0, 1, 0, 3, true],
@@ -405,6 +411,64 @@ test('correction-counts', '多次纠错不影响独立正确率和连续次数',
   invariant(stats['正确率'].value, '0%', 'Successful correction does not inflate the correctness rate.');
   const rows = await dailyRows(page);
   invariant(rows[0].slice(1, 7), ['1', '0', '1', '0%', '3', '0'], 'Daily statistics separate corrections.');
+});
+
+test('correction-replay', '三个答题模式纠错成功固定朗读一遍', 'P1', ['设置播放3遍并关闭下一条自动朗读', '各模式独立答错并再次纠错失败', '播放过程中正确纠错', '检查固定一遍、计分和切题'], async page => {
+  await repetitionSettings(page, 3, false);
+  for (const name of ['listen', 'chinese', 'phonetic']) {
+    await mode(page, name);
+    const item = await currentEntry(page), before = await page.evaluate(() => window.__auditSpeech.speak.length);
+    await submit(page, 'wrong-correction-replay');
+    await submit(page, 'wrong-correction-again');
+    invariant(await page.evaluate(() => window.__auditSpeech.speak.length), before, 'Failed answers do not trigger success playback.');
+    await page.locator('#answer-input').press('Alt+r');
+    await speechCount(page, before + 1);
+    const stale = await page.evaluate(() => { window.__staleCorrectionSpeech = window.__auditSpeech.current; return window.__auditSpeech.cancel; });
+    await page.locator('#answer-input').fill(item.acceptedAnswers.at(-1));
+    if (name === 'chinese') await page.locator('#check-answer').click();
+    else await page.locator('#answer-input').press('Enter');
+    await speechCount(page, before + 2);
+    invariant(await page.evaluate(() => window.__auditSpeech.speak.at(-1).text), item.speakText || item.english, 'Successful correction reads the current entry.');
+    assert.ok(await page.evaluate(n => window.__auditSpeech.cancel > n, stale), 'Success cancels the previous repetition sequence.');
+    await page.evaluate(() => window.__staleCorrectionSpeech.onend?.());
+    await finishUtterance(page); await page.waitForTimeout(650);
+    invariant(await page.evaluate(() => window.__auditSpeech.speak.length), before + 2, 'Correction adds exactly one utterance even when playback is set to three.');
+    const saved = await state(page), record = saved.records[item.id];
+    invariant([record.attempts, record.correct, record.wrong, record.streak, record.corrections], [1, 0, 1, 0, 2], 'Success playback does not change independent accuracy or streak.');
+    invariant([saved.settings.repeats, saved.settings.autoSpeak], [3, false], 'Correction playback preserves the saved speech settings.');
+    invariant(await page.locator('#next').evaluate(el => el === document.activeElement), true, 'Successful correction keeps Enter ready to advance.');
+    await page.reload();
+    invariant(await page.evaluate(() => window.__auditSpeech.speak.length), 0, 'Reloading a completed correction does not play it again.');
+    await page.locator('#next').focus(); await page.keyboard.press('Enter');
+    invariant(await currentId(page) === item.id, false, 'Enter advances after correction.');
+    invariant(await page.evaluate(() => window.__auditSpeech.speak.length), 0, 'Next-entry automatic reading remains disabled.');
+  }
+});
+
+test('rounded-settings', '设置与帮助弹窗四角一致且内部可滚动', 'P2', ['检查桌面、手机与矮屏', '切换三种配色', '滚动到设置底部并返回关闭按钮', '检查帮助弹窗'], async page => {
+  for (const viewport of [{ width: 1280, height: 720 }, { width: 390, height: 844 }, { width: 844, height: 390 }]) {
+    await page.setViewportSize(viewport);
+    for (const theme of ['contrast', 'paper', 'dark']) {
+      await page.locator('#open-sound').click();
+      await page.locator('#theme-select').selectOption(theme);
+      const geometry = await page.locator('#sound-dialog').evaluate(dialog => {
+        const style = getComputedStyle(dialog), scroll = dialog.querySelector('.dialog-scroll'), bounds = dialog.getBoundingClientRect();
+        return { corners: [style.borderTopLeftRadius, style.borderTopRightRadius, style.borderBottomLeftRadius, style.borderBottomRightRadius],
+          overflow: style.overflow, fits: bounds.left >= 0 && bounds.right <= innerWidth && bounds.top >= 0 && bounds.bottom <= innerHeight,
+          scrollable: scroll.scrollHeight > scroll.clientHeight, scrollOverflow: getComputedStyle(scroll).overflowY };
+      });
+      invariant(geometry, { corners: Array(4).fill('22px'), overflow: 'hidden', fits: true, scrollable: true, scrollOverflow: 'auto' }, 'The scroll area stays inside the rounded, screen-fitting modal.');
+      if (theme === 'contrast') await page.locator('#sound-dialog').screenshot({ path: path.join(screenshotDir,
+        `rounded-settings-${new URL(page.url()).protocol === 'file:' ? 'file' : 'http'}-${viewport.width}x${viewport.height}.png`) });
+      await page.locator('#mistake-target').selectOption('4');
+      invariant(await page.locator('#mistake-target').isVisible(), true, 'The last setting remains reachable.');
+      await page.locator('#sound-dialog .close-button').click();
+    }
+    await page.locator('#open-help').click();
+    await page.locator('#help-dialog .practice-help p:last-child').scrollIntoViewIfNeeded();
+    assert.match(await page.locator('#help-dialog .practice-help').innerText(), /纠错成功后会再朗读 1 遍/, 'Help explains the correction playback rule.');
+    await page.locator('#help-dialog .close-button').click();
+  }
 });
 
 for (const target of [1, 2, 3, 4, 5, 10]) test(`threshold-${target}`, `连续独立答对 ${target} 次移出`, 'P1',

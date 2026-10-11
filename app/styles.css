@@ -78,3 +78,8 @@ body.immersive{background:var(--bg)}.immersive .brand,.immersive #open-sound,.im
 .question-hint>div,.daily-table td{color:var(--ink)}.synonym-chip{color:var(--ink)}
 .practice-help{color:var(--muted)}.rate-controls input[type=number]{background:var(--paper)}
 @media(max-width:420px){.answer-row input{font-size:16px}.answer-row .button{font-size:14px}.practice-controls{padding:12px}.exercise-toolbar>.text-button{font-size:13px;padding:6px 7px}.practice-category select{width:auto}}
+
+/* Keep the native scrollbar inside the rounded modal outline. */
+.settings-dialog{padding:0;overflow:hidden}
+.dialog-scroll{max-height:calc(90vh - 2px);overflow:auto;border-radius:inherit;padding:26px 29px;scrollbar-width:thin;scrollbar-color:var(--control-line) var(--paper)}
+@media(max-width:420px){.dialog-scroll{padding:20px}}

@@ -307,8 +307,13 @@
     history.unshift({ id: item.id, answer, correct, correction, mode: current.mode, at: record.lastPracticed, durationMs: activityMs });
     current.result = { answer, correct, removed, correction };
     save(); render();
-    if (current.result.correct) $('next').focus({ preventScroll: true });
-    else { $('answer-input').focus({ preventScroll: true }); $('answer-input').select(); }
+    if (correct) {
+      $('next').focus({ preventScroll: true });
+      if (correction) speak(item.speakText || item.english, 1);
+    } else {
+      $('answer-input').value = '';
+      $('answer-input').focus({ preventScroll: true });
+    }
   }
   function toggleMistake(id) {
     if (correctionLocked() && currentItem()?.id === id) { toast('纠错完成后可以手动移出'); return; }
@@ -583,7 +588,7 @@
         else { speechSequence = null; setSpeechStatus(''); }
       };
       u.onerror = event => fail(['canceled', 'interrupted'].includes(event.error) ? '' : event.error === 'not-allowed' ?
-        '请点击播放按钮，再试一次。' : '浏览器朗读失败，请在声音设置中换一个音色后重试。');
+        '请点击播放按钮，再试一次。' : '浏览器朗读失败，请在设置中换一个音色后重试。');
       const checkTimeout = () => {
         if (generation !== speechGeneration || finished) return;
         if (sequence.paused || synthesis.paused) { speechTimer = setTimeout(checkTimeout, 10000); return; }
@@ -900,7 +905,7 @@
     if (Number.isInteger(savedSession.cursor) && savedSession.cursor >= 0 && savedSession.cursor < current.ids.length) current.cursor = savedSession.cursor;
     if (currentItem() && savedSession.result && typeof savedSession.result.correct === 'boolean') {
       current.result = { correct: savedSession.result.correct, answer: String(savedSession.result.answer || ''), correction: savedSession.result.correction === true, removed: false };
-      $('answer-input').value = current.result.answer;
+      $('answer-input').value = current.result.correct ? current.result.answer : '';
       if (!current.result.correct) recordFor(currentItem().id).inMistakes = true;
     }
     current.flipped = current.mode === 'flashcard' && savedSession.flipped === true;
