@@ -309,11 +309,11 @@
     save(); render();
     if (correct) {
       $('next').focus({ preventScroll: true });
-      if (correction) speak(item.speakText || item.english, 1);
     } else {
       $('answer-input').value = '';
       $('answer-input').focus({ preventScroll: true });
     }
+    if (!correct || correction) speak(item.speakText || item.english, 1);
   }
   function toggleMistake(id) {
     if (correctionLocked() && currentItem()?.id === id) { toast('纠错完成后可以手动移出'); return; }

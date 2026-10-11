@@ -413,26 +413,38 @@ test('correction-counts', '多次纠错不影响独立正确率和连续次数',
   invariant(rows[0].slice(1, 7), ['1', '0', '1', '0%', '3', '0'], 'Daily statistics separate corrections.');
 });
 
-test('correction-replay', '三个答题模式纠错成功固定朗读一遍', 'P1', ['设置播放3遍并关闭下一条自动朗读', '各模式独立答错并再次纠错失败', '播放过程中正确纠错', '检查固定一遍、计分和切题'], async page => {
+test('correction-replay', '三个答题模式答错及纠错成功均朗读一遍', 'P1', ['设置播放3遍并关闭下一条自动朗读', '各模式独立答错并再次纠错失败', '播放过程中正确纠错', '检查每次一遍、计分和切题'], async page => {
   await repetitionSettings(page, 3, false);
   for (const name of ['listen', 'chinese', 'phonetic']) {
     await mode(page, name);
     const item = await currentEntry(page), before = await page.evaluate(() => window.__auditSpeech.speak.length);
     await submit(page, 'wrong-correction-replay');
-    await submit(page, 'wrong-correction-again');
-    invariant(await page.evaluate(() => window.__auditSpeech.speak.length), before, 'Failed answers do not trigger success playback.');
-    await page.locator('#answer-input').press('Alt+r');
     await speechCount(page, before + 1);
+    invariant(await page.evaluate(() => window.__auditSpeech.speak.at(-1).text), item.speakText || item.english, 'Entering correction reads the current entry automatically.');
+    await page.evaluate(() => { window.__staleWrongSpeech = window.__auditSpeech.current; });
+    await page.locator('#answer-input').fill('wrong-correction-again');
+    if (name === 'chinese') await page.locator('#check-answer').click();
+    else await page.locator('#answer-input').press('Enter');
+    await speechCount(page, before + 2);
+    invariant(await page.evaluate(() => window.__auditSpeech.speak.at(-1).text), item.speakText || item.english, 'A failed correction automatically reads the same entry again.');
+    invariant(await page.locator('#answer-input').inputValue(), '', 'A failed correction clears the input before playback.');
+    invariant(await page.locator('#answer-input').evaluate(el => el === document.activeElement), true, 'Automatic playback keeps the input ready for correction.');
+    invariant(await currentId(page), item.id, 'Automatic playback stays on the locked question.');
+    await page.evaluate(() => window.__staleWrongSpeech.onend?.());
+    await finishUtterance(page); await page.waitForTimeout(650);
+    invariant(await page.evaluate(() => window.__auditSpeech.speak.length), before + 2, 'Each wrong answer adds exactly one utterance, ignoring the repetition setting.');
+    await page.locator('#answer-input').press('Alt+r');
+    await speechCount(page, before + 3);
     const stale = await page.evaluate(() => { window.__staleCorrectionSpeech = window.__auditSpeech.current; return window.__auditSpeech.cancel; });
     await page.locator('#answer-input').fill(item.acceptedAnswers.at(-1));
     if (name === 'chinese') await page.locator('#check-answer').click();
     else await page.locator('#answer-input').press('Enter');
-    await speechCount(page, before + 2);
+    await speechCount(page, before + 4);
     invariant(await page.evaluate(() => window.__auditSpeech.speak.at(-1).text), item.speakText || item.english, 'Successful correction reads the current entry.');
     assert.ok(await page.evaluate(n => window.__auditSpeech.cancel > n, stale), 'Success cancels the previous repetition sequence.');
     await page.evaluate(() => window.__staleCorrectionSpeech.onend?.());
     await finishUtterance(page); await page.waitForTimeout(650);
-    invariant(await page.evaluate(() => window.__auditSpeech.speak.length), before + 2, 'Correction adds exactly one utterance even when playback is set to three.');
+    invariant(await page.evaluate(() => window.__auditSpeech.speak.length), before + 4, 'Successful correction also adds exactly one utterance when playback is set to three.');
     const saved = await state(page), record = saved.records[item.id];
     invariant([record.attempts, record.correct, record.wrong, record.streak, record.corrections], [1, 0, 1, 0, 2], 'Success playback does not change independent accuracy or streak.');
     invariant([saved.settings.repeats, saved.settings.autoSpeak], [3, false], 'Correction playback preserves the saved speech settings.');

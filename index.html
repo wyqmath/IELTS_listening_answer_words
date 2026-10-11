@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="app/assets/icon.svg">
   <link rel="stylesheet" href="app/styles.css?v=20261011-spelling">
   <script src="app/data/vocab.js" defer></script>
-  <script src="app/app.js?v=20261011-spelling" defer></script>
+  <script src="app/app.js?v=20261011-correction-playback" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -109,7 +109,7 @@
   <dialog id="help-dialog" class="settings-dialog">
     <div class="dialog-scroll">
       <form method="dialog" class="dialog-header"><h2>快捷键与判分</h2><button class="close-button" aria-label="关闭帮助" type="submit">×</button></form>
-      <div class="practice-help"><p><kbd>Enter</kbd> 答案空白时播放，填好后提交；答对或纠错完成后进入下一条并默认朗读。词卡中按回车朗读。</p><p><kbd>Alt+R</kbd> 随时重听；输入框外也可按 <kbd>R</kbd>。</p><p><kbd>Space</kbd> 在输入框外播放、暂停或继续；<kbd>Esc</kbd> 关闭弹窗、收起范围或退出全屏。</p><p>按钮聚焦时，回车执行该按钮的操作；输入法选字时不提交答案。</p><p id="input-help">冠词、单复数和时态要准确；大小写不影响判分。</p><p>答错后清空输入，需重新拼写正确；纠错成功后会再朗读 1 遍。纠错和翻卡不计独立答题正确率。</p></div>
+      <div class="practice-help"><p><kbd>Enter</kbd> 答案空白时播放，填好后提交；答对或纠错完成后进入下一条并默认朗读。词卡中按回车朗读。</p><p><kbd>Alt+R</kbd> 随时重听；输入框外也可按 <kbd>R</kbd>。</p><p><kbd>Space</kbd> 在输入框外播放、暂停或继续；<kbd>Esc</kbd> 关闭弹窗、收起范围或退出全屏。</p><p>按钮聚焦时，回车执行该按钮的操作；输入法选字时不提交答案。</p><p id="input-help">冠词、单复数和时态要准确；大小写不影响判分。</p><p>答错后清空输入并朗读 1 遍，需重新拼写正确；纠错成功后会再朗读 1 遍。纠错和翻卡不计独立答题正确率。</p></div>
     </div>
   </dialog>
   <dialog id="confirm-dialog" class="confirm-dialog"><h2 id="confirm-title"></h2><p id="confirm-text"></p><div class="button-group"><button class="button outlined" id="cancel-confirm" type="button">取消</button><button class="button primary" id="accept-confirm" type="button">确认</button></div></dialog>
