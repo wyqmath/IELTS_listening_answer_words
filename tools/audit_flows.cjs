@@ -684,6 +684,35 @@ test('formal-aliases', '数字、时间、日期和编号的原形式及英文�
   }
 });
 
+test('clock-numeral-aliases', '整点时间接受数字加 o’clock 并与数值词条区分', 'P1', ['在三个答题模式输入6点和7点的数字及英文写法', '拒绝错误小时和非整点时间', '数值6仍不接受时间写法'], async page => {
+  const six = entries.find(x => x.type === 'time' && x.original === '6');
+  const seven = entries.find(x => x.type === 'time' && x.original === '7:00');
+  const number = entries.find(x => x.type === 'number' && x.original === '6');
+  assert.ok(six && seven && number, 'Time and numeric entries retain distinct identities.');
+  for (const name of ['listen', 'chinese', 'phonetic']) {
+    await mode(page, name);
+    for (const [item, hour] of [[six, 6], [seven, 7]]) {
+      for (const answer of [`${hour} o'clock`, `${hour} O’CLOCK`, item.english]) {
+        await choose(page, item); await submit(page, answer);
+        const saved = await state(page);
+        invariant(saved.session.result.correct, true, name + ' accepts the equivalent hour form: ' + answer);
+        invariant(saved.session.result.correction, false, 'Equivalent time expressions pass on the independent answer.');
+        invariant(saved.records[item.id].wrong, 0, 'Accepted clock expressions do not enter mistakes.');
+      }
+    }
+  }
+  for (const [item, wrong, correct] of [[six, "7 o'clock", "6 o'clock"], [six, '6:01', "6 o'clock"], [seven, "6 o'clock", "7 o'clock"]]) {
+    await choose(page, item); await submit(page, wrong);
+    invariant((await state(page)).session.result.correct, false, 'A different clock time is still rejected.');
+    invariant(await page.locator('#next').isDisabled(), true, 'Different times retain the correction lock.');
+    await submit(page, correct);
+    invariant((await state(page)).session.result.correct, true, 'Numeric o’clock spelling also completes correction.');
+  }
+  await choose(page, number); await submit(page, "6 o'clock");
+  invariant((await state(page)).session.result.correct, false, 'The plain number six does not accept a clock expression.');
+  await submit(page, 'six');
+});
+
 test('plural-strict', '单复数严格判分，大小写可接受', 'P1', ['选择 accidents', '输入 accident', '使用 ACCIDENTS 纠错'], async page => {
   const item = entries.find(x => x.original === 'accidents'); await choose(page, item);
   await submit(page, 'accident'); invariant((await state(page)).session.result.correct, false, 'The singular does not match a plural answer.');

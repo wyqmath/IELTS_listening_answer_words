@@ -235,6 +235,10 @@ def spoken_plan(source: dict[str, Any]) -> tuple[str, list[str], str]:
                         f"{hour:02d}:{minute:02d}{meridiem}", f"{hour:02d}.{minute:02d}{meridiem}",
                         f"{hour:02d}:{minute:02d}" + (" " + meridiem if meridiem else ""),
                         f"{hour:02d}.{minute:02d}" + (" " + meridiem if meridiem else "")]
+            if minute == 0 and 1 <= hour <= 12:
+                aliases.append(f"{hour} o'clock{suffix}")
+                if meridiem:
+                    aliases.append(f"{hour} o'clock {meridiem}")
             if minute == 30:
                 aliases += ["half past " + number_words(hour) + suffix]
             elif minute == 15:
@@ -251,7 +255,7 @@ def spoken_plan(source: dict[str, Any]) -> tuple[str, list[str], str]:
                             f"{hour_24:02d}:{minute:02d}", f"{hour_24:02d}.{minute:02d}"]
         elif original == "6":
             english = "six o'clock"
-            aliases += ["six", "6:00", "6.00"]
+            aliases += ["six", "6:00", "6.00", "6 o'clock"]
         else:
             english = re.sub(r"\b\d+\b", lambda m: number_words(int(m[0])), original.replace("30-40", "30 to 40"))
             for left, right in (("four days", "4 days"), ("three months", "3 months"), ("two years", "2 years")):

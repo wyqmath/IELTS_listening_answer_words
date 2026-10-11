@@ -56260,6 +56260,7 @@ window.LISTENING_DATA = {
         "six",
         "6:00",
         "6.00",
+        "6 o'clock",
         "six o'clock"
       ],
       "synonyms": [],
@@ -56356,6 +56357,7 @@ window.LISTENING_DATA = {
         "7.00",
         "07:00",
         "07.00",
+        "7 o'clock",
         "seven o'clock"
       ],
       "synonyms": [],

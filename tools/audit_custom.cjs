@@ -43,7 +43,7 @@ async function practiceCase(channel, transport, url) {
   let active = structuredClone(example);
   const key = `tingjian.${example.datasetId}`, oldCustomKey = `tingjian.v2.${example.datasetId}`,
     legacy = { version: 2, dataset: '1533', records: { sentinel: { marked: true } } };
-  await context.route('**/data/vocab.js', route => route.fulfill({ contentType: 'text/javascript',
+  await context.route('**/data/vocab.js*', route => route.fulfill({ contentType: 'text/javascript',
     body: 'window.LISTENING_DATA = ' + JSON.stringify(active) + ';' }));
   await context.addInitScript(speechControls);
   await context.addInitScript(value => { if (!localStorage.getItem('tingjian.full.v2')) localStorage.setItem('tingjian.full.v2', JSON.stringify(value)); }, legacy);
