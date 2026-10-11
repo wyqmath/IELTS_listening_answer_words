@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "description": "IELTS listening answer vocabulary and reusable English listening, spelling and flashcard practice",
-  "license": "MIT",
   "scripts": {
     "test:flows": "node tools/audit_flows.cjs",
     "test:custom": "node tools/audit_custom.cjs",

@@ -10,20 +10,21 @@ import re
 import subprocess
 import sys
 from urllib.parse import urlsplit
-import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_ROOT = {
-    '.gitignore', '.gitattributes', 'LICENSE', 'README.md', 'README.en.md', '使用说明.md',
+    '.gitignore', '.gitattributes', 'README.md', 'README.zh-CN.md',
     'package.json', 'package-lock.json', 'index.html', 'app.js', 'styles.css',
     '打开网页.cmd', '启动本地预览.cmd',
 }
+# Former public documents are still scanned for secrets in existing commits.
+HISTORICAL_PUBLIC_PATHS = {'LICENSE', 'README.en.md', '使用说明.md', 'tools/README.en.md'}
 PRIVATE_EXAMPLES = [
     '.env', '.env.local', 'private/source.md', '1.md', 'source.md',
     'data/source_rows.json', 'data/full_annotation_state.json',
     'data/quality_review.json', 'data/full_pipeline.log', 'data/vocab.before_review.json',
     'reports/preview.png', 'reports/audit.json', 'node_modules/example/index.js',
-    'tools/__pycache__/example.pyc', 'study-backup.json', 'dist/upload.zip',
+    'tools/__pycache__/example.pyc', 'study-backup.json', 'dist/build-output.json',
 ]
 SECRET_PATTERNS = {
     'api-key-format': re.compile(rb'(?i)\b[a-f0-9]{32}\.[a-z0-9]{16}\b'),
@@ -57,7 +58,7 @@ def public_path(name: str) -> bool:
     if name in PUBLIC_ROOT or name in {'assets/icon.svg', 'data/vocab.json', 'data/vocab.js', 'examples/source.json', 'examples/vocab.json'}:
         return True
     return (len(path.parts) == 2 and path.parts[0] == 'tools'
-            and (path.suffix in {'.py', '.cjs'} or path.name in {'README.md', 'README.en.md'}))
+            and (path.suffix in {'.py', '.cjs'} or path.name in {'README.md', 'README.zh-CN.md'}))
 
 
 def inspect_content(data: bytes, *, include_metadata: bool = True) -> set[str]:
@@ -90,7 +91,6 @@ def inspect_content(data: bytes, *, include_metadata: bool = True) -> set[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--export-zip', type=Path, help='export checked public files after the scan passes')
     parser.add_argument('--report', type=Path, help='optionally save the scanner report locally')
     args = parser.parse_args()
     repository = Path(git('rev-parse', '--show-toplevel').decode().strip()).resolve()
@@ -139,7 +139,7 @@ def main() -> int:
         if git('cat-file', '-t', digest).strip() != b'blob':
             continue
         historical_blobs += 1
-        if name and not public_path(name):
+        if name and not public_path(name) and name not in HISTORICAL_PUBLIC_PATHS:
             findings.append({'file': name, 'scope': 'history', 'category': 'private-file-in-history'})
         record(git('cat-file', 'blob', digest), name or '<unnamed blob>', 'history')
 
@@ -160,21 +160,8 @@ def main() -> int:
         'publicFileCount': len(filenames), 'stagedFileCount': len(stages),
         'historicalBlobCount': historical_blobs, 'localTextFilesScanned': local_text_files,
         'privateExclusionsChecked': len(PRIVATE_EXAMPLES), 'findings': findings,
-        'publicFileHashes': hashes, 'zipFile': None,
+        'publicFileHashes': hashes,
     }
-    if report['passed'] and args.export_zip:
-        archive = args.export_zip if args.export_zip.is_absolute() else ROOT / args.export_zip
-        archive = archive.resolve()
-        if archive.suffix.lower() != '.zip' or not archive.is_relative_to(ROOT / 'dist'):
-            raise ValueError('ZIP output must be a .zip file inside this project\'s ignored dist directory')
-        archive.parent.mkdir(parents=True, exist_ok=True)
-        with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as bundle:
-            for name in filenames:
-                data = (ROOT / name).read_bytes()
-                if hashlib.sha256(data).hexdigest() != hashes[name]:
-                    raise RuntimeError('A public file changed during export; rerun the scan')
-                bundle.writestr(name, data)
-        report['zipFile'] = archive.relative_to(ROOT).as_posix()
     if args.report:
         report_path = args.report if args.report.is_absolute() else ROOT / args.report
         report_path.parent.mkdir(parents=True, exist_ok=True)

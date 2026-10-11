@@ -2,10 +2,8 @@
 /*
 !/.gitignore
 !/.gitattributes
-!/LICENSE
 !/README.md
-!/README.en.md
-!/使用说明.md
+!/README.zh-CN.md
 !/package.json
 !/package-lock.json
 !/index.html
@@ -33,7 +31,7 @@
 !/tools/*.py
 !/tools/*.cjs
 !/tools/README.md
-!/tools/README.en.md
+!/tools/README.zh-CN.md
 
 # Never publish local credentials, original notes, backups or study records.
 .env
